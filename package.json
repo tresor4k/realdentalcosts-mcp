@@ -1,6 +1,6 @@
 {
   "name": "realdentalcosts-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Look up real US dental prices from your AI assistant: 12 procedures across all 51 states, 200+ cities, cash vs insurance out-of-pocket estimates — data from the Real Dental Costs research index (EN/ES).",
   "type": "module",
   "license": "MIT",
@@ -51,5 +51,6 @@
   "devDependencies": {
     "typescript": "^5.6.3",
     "@types/node": "^20.14.0"
-  }
+  },
+  "mcpName": "io.github.tresor4k/realdentalcosts-mcp"
 }
