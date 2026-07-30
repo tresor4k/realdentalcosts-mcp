@@ -1,31 +1,21 @@
 /**
- * Loader + types for the reduced city/state dataset (src/data/cities.json),
- * derived mechanically from realdentalcosts.com `data/dental_costs.json` by
- * scripts/extract-cities.mjs. See that script for the exact field mapping —
- * no cost values are altered.
+ * Loader + types for the city dataset (src/data/cities.json), extracted
+ * mechanically by scripts/extract-cities.mjs from the PUBLISHED Real Dental
+ * Costs city CSV (us-dental-cost-by-city-2026.csv, DOI 10.5281/zenodo.20819438).
+ * Only the observed single-implant average exists per city upstream — the
+ * unpublished per-city veneer/braces figures were retired in the 2026-07
+ * data-integrity work on the source site.
  */
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-
-export interface ProcedureTriple {
-  avg: number;
-  min?: number;
-  max?: number;
-  insurance?: {
-    coverageRate?: number;
-    medicaidNotes?: { en?: string; es?: string };
-  };
-}
 
 export interface CityEntry {
   name: string;
   slug: string;
   clinics?: number;
   costs: {
-    Implants?: { avg: number };
-    Veneers?: { avg: number };
-    Braces?: { avg: number };
+    Implants: { avg: number };
   };
 }
 
@@ -33,21 +23,10 @@ export interface StateEntry {
   code: string;
   name: string;
   slug: string;
-  insuranceCoverage?: number;
-  costs: {
-    Implants?: ProcedureTriple;
-    Veneers?: ProcedureTriple;
-    Braces?: ProcedureTriple;
-  };
   cities: CityEntry[];
 }
 
 export interface CitiesDataset {
-  national: {
-    Implants?: ProcedureTriple;
-    Veneers?: ProcedureTriple;
-    Braces?: ProcedureTriple;
-  };
   states: StateEntry[];
 }
 
