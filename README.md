@@ -113,6 +113,22 @@ the US Hispanic market covered by the source site's `/es/` pages.
 Every response includes `source` and `reference_url` fields so the numbers
 stay traceable back to the published page they come from.
 
+## Open JSON API (no MCP required)
+
+The same data this MCP server exposes is also available as a **free, open JSON API** —
+static versioned endpoints, no key, CORS enabled, documented with an OpenAPI 3.1 spec:
+
+- Docs: <https://realdentalcosts.com/en/api/>
+- Metadata & DOIs: <https://realdentalcosts.com/api/v1/index/meta.json>
+- All 51 state markets: <https://realdentalcosts.com/api/v1/states.json>
+- One state: <https://realdentalcosts.com/api/v1/state/tx.json>
+- The 12 procedures: <https://realdentalcosts.com/api/v1/procedures.json>
+- One procedure across states: <https://realdentalcosts.com/api/v1/procedure/dental-implant.json>
+- OpenAPI 3.1 spec: <https://realdentalcosts.com/api/v1/openapi.json>
+
+License **CC BY 4.0** — attribution required: link to <https://realdentalcosts.com> or cite
+DOI [10.5281/zenodo.20531728](https://doi.org/10.5281/zenodo.20531728).
+
 ## Data & methodology
 
 Data is derived from the **US Dental Cost Index 2026**, an open dataset
