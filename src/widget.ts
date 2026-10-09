@@ -143,6 +143,7 @@ export const PLAN_WIDGET_HTML = `<!doctype html>
   }
   function paidCell(m) {
     var td = el("td"), x = pickOk(m);
+    if (m && m.status === "amounts_not_reliable") { td.appendChild(document.createTextNode("— ")); td.appendChild(el("span", "warn", m.reason)); return td; }
     if (!x) { td.appendChild(el("span", "warn", m && m.status === "code_required" ? "needs code" : "no source")); return td; }
     td.appendChild(document.createTextNode(usd(x.p25) + " / " + usd(x.median_cell) + " / " + usd(x.p75)));
     td.appendChild(badge((x.geo === "national" ? "national " : "") + x.period));
@@ -200,7 +201,7 @@ export const PLAN_WIDGET_HTML = `<!doctype html>
     root.appendChild(el("p", null, "National, paid per claim line (T-MSIS " + n.period + "): p25 " + usd(n.p25) + " · median " + usd(n.median_cell) + " · p75 " + usd(n.p75)));
     if (d.cell) {
       var c = d.cell.status === "ok" ? d.cell : null;
-      root.appendChild(el("p", c ? null : "warn", c ? d.state.name + ": p25 " + usd(c.p25) + " · median " + usd(c.median_cell) + " · p75 " + usd(c.p75) + " · rank " + c.rank.rank + "/" + c.rank.of : d.state.name + ": no source at state level, national shown"));
+      root.appendChild(el("p", c ? null : "warn", c ? d.state.name + ": p25 " + usd(c.p25) + " · median " + usd(c.median_cell) + " · p75 " + usd(c.p75) + " · rank " + c.rank.rank + "/" + c.rank.of + (c.caveat ? " (" + c.caveat + ")" : "") : d.cell.status === "amounts_not_reliable" ? d.state.name + ": — " + d.cell.reason : d.state.name + ": no source at state level, national shown"));
       if (d.official_fee.status === "ok") root.appendChild(el("p", "note", "Official fee " + usd(d.official_fee.fee_usd) + " (effective " + d.official_fee.effective_date + ", scope " + d.official_fee.schedule_scope + ")"));
     }
     if (d.cash_benchmark.status === "ok") root.appendChild(el("p", "note", "National cash band " + usd(d.cash_benchmark.national_low_usd) + "–" + usd(d.cash_benchmark.national_high_usd)));
@@ -231,7 +232,13 @@ export const PLAN_WIDGET_HTML = `<!doctype html>
   }
   function summary(d, src) {
     var out = ["Real Dental Costs — " + (d.state ? d.state.name : d.code || "")];
-    if (d.lines) d.lines.forEach(function (l) { out.push((l.input.code || l.input.procedure) + ": " + verdict(l)); });
+    if (d.lines) d.lines.forEach(function (l) {
+      var m = l.medicaid_paid, s = (l.input.code || l.input.procedure) + ": " + verdict(l);
+      if (m && m.status === "amounts_not_reliable") s += " · Medicaid paid per claim line: — (" + m.reason + ")";
+      else if (m && m.status === "ok") s += " · Medicaid paid per claim line (T-MSIS " + m.period + ") median " + usd(m.median_cell) + (m.caveat ? " (" + m.caveat + ")" : "");
+      out.push(s);
+    });
+    if (d.cell && d.cell.status === "amounts_not_reliable") out.push("Medicaid paid per claim line: — (" + d.cell.reason + ")");
     if (d.medicaid_adult_rule) out.push("Adult Medicaid: " + d.medicaid_adult_rule.level.value);
     src.forEach(function (s, i) { out.push("[" + (i + 1) + "] " + s.url + (s.date ? " (" + s.date + ")" : "")); });
     out.push(d.disclaimer || "");

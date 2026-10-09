@@ -130,6 +130,11 @@ function nationalPaid(code: string, lang: Lang, withSeries = false): Any {
   };
 }
 
+export const NOMINAL = "nominal_amounts_suspected";
+const NOMINAL_REASON =
+  "claim lines in this state carry nominal or zero paid amounts (managed-care encounter records); see the official fee schedule instead";
+const NON_NPI_CAVEAT = "provider identifiers are not NPIs; amounts may be understated";
+
 function medicaidPaid(code: string, st: string, lang: Lang, withSeries = false, compact = false): Any {
   const s = D().medicaid.codes[code].states[st];
   if (!s?.latest) {
@@ -144,6 +149,22 @@ function medicaidPaid(code: string, st: string, lang: Lang, withSeries = false, 
       next_level: nationalPaid(code, lang, withSeries),
     };
   }
+  if (s.quality_flag === NOMINAL) {
+    // Managed-care encounter records carry nominal/zero paid amounts: no dollar figure is shown.
+    return {
+      status: "amounts_not_reliable",
+      geo: "state",
+      state: st,
+      label: T.tmsis[lang],
+      reason: NOMINAL_REASON,
+      quality_flag: s.quality_flag,
+      ...(s.quality_evidence && !compact ? { quality_evidence: s.quality_evidence } : {}),
+      period: s.latest.period,
+      lines: s.latest.lines,
+      n_providers: s.latest.n_providers,
+      source_url: D().medicaid.meta.source_url,
+    };
+  }
   return {
     status: "ok",
     geo: "state",
@@ -152,6 +173,7 @@ function medicaidPaid(code: string, st: string, lang: Lang, withSeries = false, 
     ...s.latest,
     ...(withSeries ? { by_year: s.by_year } : {}),
     quality_flag: s.quality_flag,
+    ...(s.quality_flag === "non_npi_identifiers" ? { caveat: NON_NPI_CAVEAT } : {}),
     ...(s.quality_evidence && !compact ? { quality_evidence: s.quality_evidence } : {}),
     confidence: s.confidence,
     ...(compact ? {} : { source: D().medicaid.meta.source, api_url: apiMedicaid(code) }),
@@ -376,9 +398,9 @@ export function medicaidPaidByCode(codeIn: string, st: string | undefined, lang:
     const cell = medicaidPaid(code, st, lang, true);
     if (cell.status === "ok") {
       const ranked = Object.entries(D().medicaid.codes[code].states as Record<string, Any>)
-        .filter(([, v]) => v.latest)
+        .filter(([, v]) => v.latest && v.quality_flag !== NOMINAL)
         .sort((a, b) => b[1].latest.paid_per_line_wavg - a[1].latest.paid_per_line_wavg);
-      cell.rank = { rank: ranked.findIndex(([k]) => k === st) + 1, of: ranked.length, by: "paid_per_line_wavg, highest = 1", badge: "derived" };
+      cell.rank = { rank: ranked.findIndex(([k]) => k === st) + 1, of: ranked.length, by: "paid_per_line_wavg, highest = 1; states with nominal amounts excluded", badge: "derived" };
     }
     out.state = { code: st, name: D().states[st].name };
     out.cell = cell;
@@ -391,7 +413,20 @@ export function medicaidPaidByCode(codeIn: string, st: string | undefined, lang:
       api_url: apiMedicaid(code),
       rows: Object.entries(c.states as Record<string, Any>)
         .filter(([, v]) => v.latest)
-        .map(([k, v]) => ({ state: k, paid_per_line_wavg: v.latest.paid_per_line_wavg, median_cell: v.latest.median_cell, p25: v.latest.p25, p75: v.latest.p75, lines: v.latest.lines, quality_flag: v.quality_flag })),
+        .map(([k, v]) =>
+          v.quality_flag === NOMINAL
+            ? { state: k, status: "amounts_not_reliable", reason: NOMINAL_REASON, lines: v.latest.lines, quality_flag: v.quality_flag }
+            : {
+                state: k,
+                paid_per_line_wavg: v.latest.paid_per_line_wavg,
+                median_cell: v.latest.median_cell,
+                p25: v.latest.p25,
+                p75: v.latest.p75,
+                lines: v.latest.lines,
+                quality_flag: v.quality_flag,
+                ...(v.quality_flag === "non_npi_identifiers" ? { caveat: NON_NPI_CAVEAT } : {}),
+              },
+        ),
     };
   }
   out.links = { code_page: `${SITE}/en/dental-codes/${code.toLowerCase()}/?${UTM}`, api: apiMedicaid(code) };

@@ -81,12 +81,25 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
   });
   const [crown, rc, srp, cbct] = sc.lines;
   assert(crown.cash_band.avg_usd === STATES.AZ.procedures.crown.avg_usd, "AZ D2740 → crown band");
-  assert(crown.medicaid_paid.quality_flag === MED.D2740.states.AZ.quality_flag, `AZ quality flag carried (${crown.medicaid_paid.quality_flag})`);
+  assert(crown.medicaid_paid.quality_flag === "nominal_amounts_suspected", "AZ cells flagged nominal_amounts_suspected");
+  for (const l of [crown, rc, srp])
+    assert(
+      l.medicaid_paid.status === "amounts_not_reliable" && ["p25", "median_cell", "p75", "paid_per_line_wavg"].every((k) => l.medicaid_paid[k] === undefined),
+      `AZ ${l.input.code}: Medicaid paid withheld (amounts_not_reliable, no dollar figure)`,
+    );
+  assert(srp.medicaid_paid.lines === MED.D4341.states.AZ.latest.lines, "AZ D4341 keeps line count only");
   assert(crown.fee_schedule.fee_usd === MED.D2740.states.AZ.official_fee.fee_usd, "AZ D2740 official fee = API");
   assert(rc.cash_band.basis === "estimated" && rc.cash_band.badges.avg_usd === "estimated", "D3330 root-canal band badged estimated");
   assert(srp.cash_band.position.quoted_per_unit_usd === 275, "D4341×4 $1,100 → $275 per quadrant");
   assert(cbct.status === "not_covered" && numbersIn({ ...cbct, input: undefined }) === 0, "D0367 (outside the 61 codes) → not_covered, 0 figure");
   assert(sc.totals.quoted_total_usd === 4250 && sc.totals.not_covered.includes("D0367"), "totals = user quotes");
+}
+
+// 3b. Michigan: non-NPI identifiers → amounts kept with a caveat
+{
+  const code = Object.keys(MED).find((c) => MED[c].states.MI?.quality_flag === "non_npi_identifiers" && MED[c].states.MI.latest);
+  const sc = await call("medicaid_paid_by_code", { code, state: "MI" });
+  assert(sc.cell.status === "ok" && typeof sc.cell.median_cell === "number" && /not NPIs/.test(sc.cell.caveat ?? ""), `MI ${code}: amounts kept + non-NPI caveat`);
 }
 
 // 4. Missing cells → no_source_at_this_level + next level, never a number

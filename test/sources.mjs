@@ -3,6 +3,7 @@
  * Source gate: fails if any number in the structuredContent of the treatment-plan
  * tools is not inside an object carrying `source_url` + (`period` | `effective_date`).
  * The only exemption is an object marked `basis: "user_input"` (the user's own quote).
+ * Also fails if a cell flagged nominal_amounts_suspected exposes any dollar figure.
  * The nearest marked ancestor decides; the root may not carry a source_url.
  * Sweeps every state, every one of the 61 codes, and the golden plans; also checks size.
  */
@@ -24,10 +25,18 @@ const client = new Client({ name: "sources", version: "0.0.0" });
 await client.connect(b);
 
 const errors = [];
-let numbers = 0, calls = 0, maxBytes = 0;
+let numbers = 0, calls = 0, maxBytes = 0, nominal = 0;
 function walk(o, where, ctx) {
   if (Array.isArray(o)) return o.forEach((v, i) => walk(v, `${where}[${i}]`, ctx));
   if (!o || typeof o !== "object") return;
+  // Nominal-amount cells (managed-care encounters): no dollar figure may leave any tool.
+  if (o.quality_flag === "nominal_amounts_suspected" && "lines" in o) { // claim-line cells only (atlas billing counts carry the flag too, no dollars)
+    nominal++;
+    if (o.status !== "amounts_not_reliable") errors.push(`${where}: nominal cell not marked amounts_not_reliable`);
+    for (const [k, v] of Object.entries(o))
+      if ((typeof v === "number" && !["lines", "n_providers"].includes(k)) || (v && typeof v === "object" && /\d/.test(JSON.stringify(v))))
+        errors.push(`${where}.${k}: monetary figure on a nominal cell`);
+  }
   const here = typeof o.source_url === "string" ? { src: true, dated: o.period != null || o.effective_date != null, at: where }
     : o.basis === "user_input" ? { user: true } : ctx;
   for (const [k, v] of Object.entries(o)) {
@@ -68,7 +77,8 @@ await check("low_cost_dental_options", { state: "OH", county: "Nowhere" });
 await check("benchmark_treatment_plan", { state: "AZ", lines: [{ code: "D2740", quoted_usd: 1450 }, { code: "D3330", quoted_usd: 1350 }, { code: "D4341", qty: 4, quoted_usd: 1100 }, { code: "D0367", quoted_usd: 350 }] });
 await client.close();
 
-console.log(`${calls} calls, ${numbers} numbers checked, largest response ${maxBytes} bytes`);
+console.log(`${calls} calls, ${numbers} numbers checked, ${nominal} nominal cells checked amount-free, largest response ${maxBytes} bytes`);
+if (nominal < 238) errors.push(`only ${nominal} nominal cells seen (expected >= 238): sweep incomplete`);
 if (maxBytes >= 60_000) errors.push(`largest response ${maxBytes} bytes >= 60 KB`);
 for (const e of errors.slice(0, 20)) console.log(`FAIL: ${e}`);
 console.log(errors.length ? `\n${errors.length} unsourced number(s) or size issue(s).` : "\nEvery number is sourced and dated.");
