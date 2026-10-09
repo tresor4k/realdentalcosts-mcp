@@ -3,8 +3,8 @@
  * realdentalcosts-mcp — stdio MCP server exposing US dental cost lookups
  * backed by the Real Dental Costs US Dental Cost Index 2026 dataset.
  *
- * Four tools: dental_cost_by_state, dental_cost_by_city,
- * out_of_pocket_estimate, dental_national_average (registered in ./tools.ts).
+ * Tools: dental_cost_by_state, dental_cost_by_city, dental_national_average,
+ * plus the treatment-plan tools (registered in ./tools.ts).
  */
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 

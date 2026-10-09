@@ -40,15 +40,18 @@ await client.connect(transport);
 
 // --- tools/list ---
 const toolsList = await client.listTools();
-assert(toolsList.tools.length === 4, `tools/list returns 4 tools (got ${toolsList.tools.length})`);
+assert(toolsList.tools.length === 7, `tools/list returns 7 tools (got ${toolsList.tools.length})`);
 const toolNames = toolsList.tools.map((t) => t.name).sort();
 assert(
   JSON.stringify(toolNames) ===
     JSON.stringify([
+      "benchmark_treatment_plan",
       "dental_cost_by_city",
       "dental_cost_by_state",
       "dental_national_average",
-      "out_of_pocket_estimate",
+      "low_cost_dental_options",
+      "medicaid_adult_dental_rules",
+      "medicaid_paid_by_code",
     ].sort()),
   `tool names match expected set (got ${toolNames.join(", ")})`,
 );

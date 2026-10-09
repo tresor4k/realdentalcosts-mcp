@@ -54,9 +54,10 @@ try {
 
   const tools = await rpc("tools/list", {});
   const names = tools.result?.tools?.map((t) => t.name) ?? [];
-  assert(names.length === 4, `tools/list returns 4 tools (${names.join(", ")})`);
+  assert(names.length === 7, `tools/list returns 7 tools (${names.join(", ")})`);
+  assert(!names.includes("out_of_pocket_estimate"), "modelled out-of-pocket tool is removed");
   assert(
-    tools.result.tools.every((t) => t._meta?.["openai/outputTemplate"] === "ui://widget/price-card.html"),
+    tools.result.tools.every((t) => /^ui:\/\/widget\/(price|plan)-card\.html$/.test(t._meta?.["openai/outputTemplate"] ?? "")),
     "every tool declares openai/outputTemplate",
   );
 
@@ -81,8 +82,15 @@ try {
   assert(/utm_source=chatgpt-app&utm_medium=mcp/.test(sc?.card?.url ?? ""), `card link carries UTM (${sc?.card?.url})`);
   assert(JSON.parse(call.result.content[0].text).cashPrice.avg === avg, "text content still carries the JSON payload");
 
+  const plan = resources.result?.resources?.find((r) => r.uri === "ui://widget/plan-card.html");
+  assert(plan?.mimeType === "text/html+skybridge", "resources/list declares the plan-card widget");
+
   const get = await fetch(URL_);
   assert(get.status === 405, "GET /mcp returns 405 (stateless, POST only)");
+
+  const priv = await fetch(URL_.replace(/\/mcp$/, "/privacy"));
+  const privHtml = await priv.text();
+  assert(priv.status === 200 && /Nothing\. Requests are processed in memory/.test(privHtml), "GET /privacy serves the static privacy page");
 } catch (err) {
   failures++;
   console.error(`FAIL: ${err.stack ?? err}`);

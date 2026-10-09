@@ -1,0 +1,1202 @@
+{
+  "synced_at": "2026-10-09T08:30:32.073Z",
+  "api_generated_at": "2026-10-01T07:28:32.762Z",
+  "site_dir": "../dentist/web",
+  "inputs": [
+    {
+      "file": "public/api/v1/medicaid/D0120.json",
+      "sha256": "001abc9b723eecfc5e619dd93558a8461ef8704422aa53bdd79ee0279b997d45",
+      "bytes": 154289
+    },
+    {
+      "file": "public/api/v1/medicaid/D0140.json",
+      "sha256": "208fed5ed923046b2d9a65e3ff08216571576893bc1d1c49bfc0997baaca15e5",
+      "bytes": 155525
+    },
+    {
+      "file": "public/api/v1/medicaid/D0145.json",
+      "sha256": "99dfdb9c4e587a8ae1590bc1df60c118793535a599ae5b862a7cae4d19624f8d",
+      "bytes": 135833
+    },
+    {
+      "file": "public/api/v1/medicaid/D0150.json",
+      "sha256": "da49d1a916ecd246bf76554cdee2303acf5dd6167111c2c784de12700ec58d4e",
+      "bytes": 154796
+    },
+    {
+      "file": "public/api/v1/medicaid/D0210.json",
+      "sha256": "5f4e3cfa607bcb3dea17740885839a6306a7df438a87431f47be056e9147149f",
+      "bytes": 154925
+    },
+    {
+      "file": "public/api/v1/medicaid/D0220.json",
+      "sha256": "eb0e2c5e711bf9f27f225e66d4ea51842618eab954f26c9a7d8a3e10e7c16747",
+      "bytes": 155420
+    },
+    {
+      "file": "public/api/v1/medicaid/D0230.json",
+      "sha256": "ea59d36b56b23273adf02587d9032f29db5fed7e97fd0f40cb9a309bea0c5596",
+      "bytes": 154703
+    },
+    {
+      "file": "public/api/v1/medicaid/D0272.json",
+      "sha256": "65c354e98db76827d179f50e84cd74635d3a2d24251bb21be5131e059d357042",
+      "bytes": 154989
+    },
+    {
+      "file": "public/api/v1/medicaid/D0274.json",
+      "sha256": "fdae97aff83855e255302800eb7a8a9e6d1cf36934413d2c915265079b3bca5e",
+      "bytes": 154247
+    },
+    {
+      "file": "public/api/v1/medicaid/D0330.json",
+      "sha256": "42a1e1b6223ee653d479019d846da2af83ee405fa75b26b5c2e1d29ba0950034",
+      "bytes": 155396
+    },
+    {
+      "file": "public/api/v1/medicaid/D0350.json",
+      "sha256": "93bf74775fa3bb5d774bfe27530c37ffef193bf1d4400f514f11547ed801cf42",
+      "bytes": 126008
+    },
+    {
+      "file": "public/api/v1/medicaid/D0601.json",
+      "sha256": "6ef2535a7fb805b2fa1a165ec3f45f9922b11543df662bae9663ccabac1e28f1",
+      "bytes": 113839
+    },
+    {
+      "file": "public/api/v1/medicaid/D0602.json",
+      "sha256": "470cf304f3126a4f941712acebbcab3baf1622316d204cd982fd52939e359655",
+      "bytes": 114836
+    },
+    {
+      "file": "public/api/v1/medicaid/D0603.json",
+      "sha256": "35c3aceba6ad06165fe77bbb0dc6f1ff7c0824e739fdc6dea0228bd907b66a6a",
+      "bytes": 117738
+    },
+    {
+      "file": "public/api/v1/medicaid/D1110.json",
+      "sha256": "605606561e6de201b102095f348efb0ef5cc3eab29adf145f206d0139994f571",
+      "bytes": 154467
+    },
+    {
+      "file": "public/api/v1/medicaid/D1120.json",
+      "sha256": "048921a88ebaa9456ec662c640436f41ab5337a5fcccdfe1a6fef06e712421cf",
+      "bytes": 141203
+    },
+    {
+      "file": "public/api/v1/medicaid/D1206.json",
+      "sha256": "45ddd83205487b7200f20a282eca4145ccbacd609b91fc1707887e582005fd25",
+      "bytes": 147982
+    },
+    {
+      "file": "public/api/v1/medicaid/D1208.json",
+      "sha256": "2ead4e7fd1ad9f9d770fe53f14777dff11680ff787379e93fec5108fb34331f2",
+      "bytes": 145893
+    },
+    {
+      "file": "public/api/v1/medicaid/D1351.json",
+      "sha256": "9503ae76f3f1a2ebfd5bf841a5f64763ced2db686621535f1c7c6bf47696679a",
+      "bytes": 142818
+    },
+    {
+      "file": "public/api/v1/medicaid/D1354.json",
+      "sha256": "aaa3d709fdae4df36e4ffc5b373483a6fba0e8bc49720772e9167b75cb66d3e9",
+      "bytes": 140797
+    },
+    {
+      "file": "public/api/v1/medicaid/D2140.json",
+      "sha256": "7099282df8f1fbe0dbc40602242ce033c6fbb97fe319fde951a0975236c0f255",
+      "bytes": 145890
+    },
+    {
+      "file": "public/api/v1/medicaid/D2150.json",
+      "sha256": "32ef78550260f3ac22b818efb067540d73068a373b8a6c9e176a8717bc629753",
+      "bytes": 148351
+    },
+    {
+      "file": "public/api/v1/medicaid/D2330.json",
+      "sha256": "50f5b78d6acb601be4a38aa6648bbd6819c79f5fe9478878e9dbd4306a6efa74",
+      "bytes": 148228
+    },
+    {
+      "file": "public/api/v1/medicaid/D2391.json",
+      "sha256": "f2131504464dcbff8c13323be8d6f03dd4265bfe0b62b5e7e065e3f16d3d50c5",
+      "bytes": 153316
+    },
+    {
+      "file": "public/api/v1/medicaid/D2392.json",
+      "sha256": "99379a11c9cc6d61625e266245a9939c62a02a7dde7f8f04e64cbbc1603151a1",
+      "bytes": 154023
+    },
+    {
+      "file": "public/api/v1/medicaid/D2393.json",
+      "sha256": "ddf25bee7ff502bf7063fd9c18a4c029fba8e18023ea5d3cc122cd8df7478599",
+      "bytes": 152992
+    },
+    {
+      "file": "public/api/v1/medicaid/D2740.json",
+      "sha256": "d842a349a30256a2c0122af91dec782d5e57c3366e8dd92918fa7099394060a1",
+      "bytes": 119230
+    },
+    {
+      "file": "public/api/v1/medicaid/D2750.json",
+      "sha256": "1192d82659a9910f5b5cc537a0b65fc9270b46011d90e24e78ae4f20f08ef465",
+      "bytes": 69527
+    },
+    {
+      "file": "public/api/v1/medicaid/D2751.json",
+      "sha256": "6e1dffec99be39fa000f2c12ea9ea44f892a704bfe3164488bb53b50d917ab08",
+      "bytes": 93849
+    },
+    {
+      "file": "public/api/v1/medicaid/D2752.json",
+      "sha256": "0197e49f07710237a9b6c5cca6f519ef50cb3143a0841df3c250a6972979e29c",
+      "bytes": 56488
+    },
+    {
+      "file": "public/api/v1/medicaid/D2790.json",
+      "sha256": "16aa492ffa78d2f297115c28e845616721eba29012525b579f6fe0e16f526498",
+      "bytes": 25638
+    },
+    {
+      "file": "public/api/v1/medicaid/D2930.json",
+      "sha256": "d3df9d78e534fb059b47c94f3289370b07c52fe08bc860ffc98978080fac6f40",
+      "bytes": 144852
+    },
+    {
+      "file": "public/api/v1/medicaid/D2950.json",
+      "sha256": "f6010a97f4c54e9b16784b7ff97f68d66ad892c27411f233289f11b99b9467ba",
+      "bytes": 127129
+    },
+    {
+      "file": "public/api/v1/medicaid/D3220.json",
+      "sha256": "f6ad2557fcb1095e44521558c01274cffec76b215cdc3f500b3be4c51ee302d1",
+      "bytes": 139198
+    },
+    {
+      "file": "public/api/v1/medicaid/D3310.json",
+      "sha256": "da39b2433d56a3b308d5eb777993c7ea6f73cf1b7ec59c9adfd814de768488c8",
+      "bytes": 104786
+    },
+    {
+      "file": "public/api/v1/medicaid/D3320.json",
+      "sha256": "72837aa2a7fd49931255b6af85bf9c0b492a6a99607443e74f1c3b986c4a2da1",
+      "bytes": 98582
+    },
+    {
+      "file": "public/api/v1/medicaid/D3330.json",
+      "sha256": "499a8019f21a960b6b9066e845c0bf10a1a6200ae04a45ab05f0df266114562e",
+      "bytes": 135950
+    },
+    {
+      "file": "public/api/v1/medicaid/D4341.json",
+      "sha256": "a5fcf92aef1fc434e805371ebd170b33e72c2c593af431830e9cc59339394f88",
+      "bytes": 136587
+    },
+    {
+      "file": "public/api/v1/medicaid/D4342.json",
+      "sha256": "f63eb05ec866ef45fe15c4d4dcc796d11dede09c765ad91393890b988dd3964b",
+      "bytes": 109346
+    },
+    {
+      "file": "public/api/v1/medicaid/D4910.json",
+      "sha256": "cbf3a9aef7bcd75d8f1ce75e016e6aa6e4917c382fe3ca4d0a54c9b34fa2558f",
+      "bytes": 124325
+    },
+    {
+      "file": "public/api/v1/medicaid/D5110.json",
+      "sha256": "b91435a305cdf8ab9b5d194519aa2fae807203836135feb40e3669e69a62dc7c",
+      "bytes": 120991
+    },
+    {
+      "file": "public/api/v1/medicaid/D5120.json",
+      "sha256": "3e9a81a12f571e6a2e782c1beb9540182ea8606991b55ba3e2acd8f103680225",
+      "bytes": 111603
+    },
+    {
+      "file": "public/api/v1/medicaid/D5130.json",
+      "sha256": "8f992d567b46691571d48cc3a2a2659223ef89a55add9b0e1d74d9cccb5be2c8",
+      "bytes": 69190
+    },
+    {
+      "file": "public/api/v1/medicaid/D5140.json",
+      "sha256": "dcbde54a214420fe335430eb6226cdb37348da844bb14b40661ff75782b8fc37",
+      "bytes": 61916
+    },
+    {
+      "file": "public/api/v1/medicaid/D5211.json",
+      "sha256": "febe80152d447ad3eaad635616bfc2681264a4c5df23663cb6c3d40c58461122",
+      "bytes": 69947
+    },
+    {
+      "file": "public/api/v1/medicaid/D5212.json",
+      "sha256": "aede62748cef982d2ca015b17bb5f67805d1cd2a65e481a3f7fd06b74da2007a",
+      "bytes": 73983
+    },
+    {
+      "file": "public/api/v1/medicaid/D5213.json",
+      "sha256": "6026c0ef75e2cd1bc5f768f61f16fa392bd2ac93116c0d73ed260508066e0076",
+      "bytes": 64851
+    },
+    {
+      "file": "public/api/v1/medicaid/D5214.json",
+      "sha256": "e7b022e83d738ee9be75db2a5f0873a545e41e319a25331fbb412ebdbf5c4a2f",
+      "bytes": 73065
+    },
+    {
+      "file": "public/api/v1/medicaid/D7140.json",
+      "sha256": "7c7a67623aff7c29431786dbf8d7af8f5cfd21fb4b55965063a89c95b2177444",
+      "bytes": 155809
+    },
+    {
+      "file": "public/api/v1/medicaid/D7210.json",
+      "sha256": "d51aa94670bcbdc41a68b4dd8d536566b02c602e61f06de8315a7fdac21868b1",
+      "bytes": 154984
+    },
+    {
+      "file": "public/api/v1/medicaid/D7220.json",
+      "sha256": "4740404f7cf6c0f8e6dc81942b63494949d7e8a5349493c80fd91bd09d3da21a",
+      "bytes": 129673
+    },
+    {
+      "file": "public/api/v1/medicaid/D7230.json",
+      "sha256": "8fe24370006d23e824728bf65367049ad2ee6f30d5e42aa8a63b2a4673e2486d",
+      "bytes": 149350
+    },
+    {
+      "file": "public/api/v1/medicaid/D7240.json",
+      "sha256": "e21562cdb49b5a2ee9c111adf41a9e9ff828e9552ee553184bd5bd03d9b72f98",
+      "bytes": 155461
+    },
+    {
+      "file": "public/api/v1/medicaid/D8080.json",
+      "sha256": "6c124966fad8414af1953bacad6869a0a0894d724c3a0208424f71b5be52fd9e",
+      "bytes": 126336
+    },
+    {
+      "file": "public/api/v1/medicaid/D8090.json",
+      "sha256": "136f32cd827da10a02992c44ec791469d7824587b6dc265bb69f1a1d687705b3",
+      "bytes": 49162
+    },
+    {
+      "file": "public/api/v1/medicaid/D8670.json",
+      "sha256": "38eb3a92e045c2daf7f16c9e39c4eee4b1e4f1dc7fe020b3254dd1a031495ed0",
+      "bytes": 127983
+    },
+    {
+      "file": "public/api/v1/medicaid/D9110.json",
+      "sha256": "3c1a2fa57c07b33f0984cd117915e90eacf143f571d5e2a0b37c5ebbe034caac",
+      "bytes": 129446
+    },
+    {
+      "file": "public/api/v1/medicaid/D9222.json",
+      "sha256": "174d0a12e014d74c7f4bdcae54b1e5e4f9f013b7ccd7c39405924801c31ea993",
+      "bytes": 151430
+    },
+    {
+      "file": "public/api/v1/medicaid/D9223.json",
+      "sha256": "473fff828c74abef88022d796f377213f87b2649e498c9f36b092275f9cecd02",
+      "bytes": 150076
+    },
+    {
+      "file": "public/api/v1/medicaid/D9230.json",
+      "sha256": "61474324e936fc20f2cf88307de18dd08576890e5a6d5ca65bb5d139d9f77f94",
+      "bytes": 149533
+    },
+    {
+      "file": "public/api/v1/medicaid/D9430.json",
+      "sha256": "6dd0ab2a40a8d1c04367f8a9bacb0e6b67c00d03cd430d10e237ab840ce8f856",
+      "bytes": 92183
+    },
+    {
+      "file": "public/api/v1/state/ak.json",
+      "sha256": "fb264b312954d487c1fd6dfbaf0e25bee80dd238260c83367e128582fc87a807",
+      "bytes": 18800
+    },
+    {
+      "file": "public/api/v1/state/al.json",
+      "sha256": "ae15fe10cb5ec5c754796a75ed6cf9f3b61c18b98a7f68d78e13ef7d84050fc5",
+      "bytes": 18791
+    },
+    {
+      "file": "public/api/v1/state/ar.json",
+      "sha256": "727afec3cb58fb3ce5d538883b5a3c058c6e531770198834595e72f4be9077f5",
+      "bytes": 18795
+    },
+    {
+      "file": "public/api/v1/state/az.json",
+      "sha256": "73f2e08332db9d3e8db88637bbdafc5db9049aa9a07b18fa1e7bd42d6dff942b",
+      "bytes": 18803
+    },
+    {
+      "file": "public/api/v1/state/ca.json",
+      "sha256": "4939414dfaaad70f2edae468a8f2d93f4babc77887fe67b9bc64c829e7a18fde",
+      "bytes": 18805
+    },
+    {
+      "file": "public/api/v1/state/co.json",
+      "sha256": "729df40f5528908a08ad84341416762b9c3044fc176449e7540f1d67e29bf043",
+      "bytes": 18802
+    },
+    {
+      "file": "public/api/v1/state/ct.json",
+      "sha256": "f4d860c83a5f5473bfc22b5c0efda55e8d3b5f475156d1bf5d27bf3edf270fe1",
+      "bytes": 18804
+    },
+    {
+      "file": "public/api/v1/state/dc.json",
+      "sha256": "d3dff1c4cd540d32005eb966724d275bf07e8d121417576f6240d1149a966b98",
+      "bytes": 18814
+    },
+    {
+      "file": "public/api/v1/state/de.json",
+      "sha256": "573208fbf114b2317a0a546ac42a48fd1c6e6978b951622635810f1e03f21757",
+      "bytes": 18799
+    },
+    {
+      "file": "public/api/v1/state/fl.json",
+      "sha256": "3a8c00bcc225f8cdea6b3a0e962eb445c4d43de56f86ea26327eb015172ff70d",
+      "bytes": 18805
+    },
+    {
+      "file": "public/api/v1/state/ga.json",
+      "sha256": "566ad500a65471d1ffa597102569720d497ffe620fc12381d138088a592fd3d3",
+      "bytes": 18798
+    },
+    {
+      "file": "public/api/v1/state/hi.json",
+      "sha256": "3a89b7da3c4745d362bca1a51b323bd0e6a6cf7cc8713bafb64ae4b19a1fdacc",
+      "bytes": 18801
+    },
+    {
+      "file": "public/api/v1/state/ia.json",
+      "sha256": "3bcebe5c6e8cd0e9ccec8d681c86d084896cd284d48ad131d799d1df42642cfd",
+      "bytes": 18794
+    },
+    {
+      "file": "public/api/v1/state/id.json",
+      "sha256": "57d0a265899dde060d0f38e24b037756bd4a464dbb3e5776123d145105356132",
+      "bytes": 18798
+    },
+    {
+      "file": "public/api/v1/state/il.json",
+      "sha256": "224a223a6debb81252981ac1172f31cbb5931b98823222ece5a6db491ec59103",
+      "bytes": 18801
+    },
+    {
+      "file": "public/api/v1/state/in.json",
+      "sha256": "a1224db69220ae856defe3d9d32ab9728407f1798ccef13b80e8fbec30c80fe7",
+      "bytes": 18796
+    },
+    {
+      "file": "public/api/v1/state/ks.json",
+      "sha256": "38b489b0e144d4e41ffacf3ffc6cc019b460c114391f6443d2f7ed59658f767c",
+      "bytes": 18795
+    },
+    {
+      "file": "public/api/v1/state/ky.json",
+      "sha256": "fb6dd6bed68219851a762e59e255efc184ca25dd77a20809e57e63a05a8b607d",
+      "bytes": 18798
+    },
+    {
+      "file": "public/api/v1/state/la.json",
+      "sha256": "79899090916d3afb0052c0766d1a932a358b9a185035416fafd71849365b29e9",
+      "bytes": 18799
+    },
+    {
+      "file": "public/api/v1/state/ma.json",
+      "sha256": "e4cb023760515e457c87b0b4fb6aad6b4249b87b366e897cbb78bd96eac2e7b6",
+      "bytes": 18808
+    },
+    {
+      "file": "public/api/v1/state/md.json",
+      "sha256": "fdbabf0db7dc12f72aea900e0c31a9b0e0ba3bbeb2568e39522ab1e248e98bec",
+      "bytes": 18802
+    },
+    {
+      "file": "public/api/v1/state/me.json",
+      "sha256": "52957cb28b9ffa1041cbfa852b6c79a34d2ad7a90b055972a5bfc62aaa538f36",
+      "bytes": 18798
+    },
+    {
+      "file": "public/api/v1/state/mi.json",
+      "sha256": "17edce2dc3633f4cad14f7dc7be3ad81706a6d27c7e310745eac964a1236f31e",
+      "bytes": 18800
+    },
+    {
+      "file": "public/api/v1/state/mn.json",
+      "sha256": "e7d4f29cab60ac79334a46e9a89ec9a6049bd845ec311f2b68e13cde2f4b8a49",
+      "bytes": 18800
+    },
+    {
+      "file": "public/api/v1/state/mo.json",
+      "sha256": "75ca650a3816dd9518832a090612a98b992ec0a40f7fc188a546f10a8581651e",
+      "bytes": 18796
+    },
+    {
+      "file": "public/api/v1/state/ms.json",
+      "sha256": "7c586c0d009e1806667f8b1dfba11438e5f4c5197853bc756eabc90cdd3aa112",
+      "bytes": 18807
+    },
+    {
+      "file": "public/api/v1/state/mt.json",
+      "sha256": "c28baba6b4eae2652941e6efb48f61985883e1f2b05760932dfc72376149900b",
+      "bytes": 18800
+    },
+    {
+      "file": "public/api/v1/state/nc.json",
+      "sha256": "fee2833fa0d5282aacf8e48f9e9da21e15cb6e429ebb32ef0c41528ba42ce8b0",
+      "bytes": 18804
+    },
+    {
+      "file": "public/api/v1/state/nd.json",
+      "sha256": "51f184186361d7c4fbaac61aed000b3b6c7dbe001fd60aeae7e438b3b005ef98",
+      "bytes": 18804
+    },
+    {
+      "file": "public/api/v1/state/ne.json",
+      "sha256": "a87ba4aaf230e18635a35096b6efd6c84c2a1257f58999b640ed61c03adb5d2b",
+      "bytes": 18799
+    },
+    {
+      "file": "public/api/v1/state/nh.json",
+      "sha256": "b7b3a6200fabb96c295260f3afe902547c5e6d570b3d069d589976bc4cd0addb",
+      "bytes": 18805
+    },
+    {
+      "file": "public/api/v1/state/nj.json",
+      "sha256": "8548f1c1a1152671c742c3df564c7bd032eed4eefcc2f6859c160d8851b7d70d",
+      "bytes": 18805
+    },
+    {
+      "file": "public/api/v1/state/nm.json",
+      "sha256": "eeb68d21c7a30e19ee7c2451abc288ad658cd02d74ff6f3d65bb0eb836c0fa34",
+      "bytes": 18802
+    },
+    {
+      "file": "public/api/v1/state/nv.json",
+      "sha256": "8d3fe139e35f7fd4e4fed3097c877812d86db100bc76e879a38b9034a8794510",
+      "bytes": 18798
+    },
+    {
+      "file": "public/api/v1/state/ny.json",
+      "sha256": "5019ce5e143b1e3403d60f1fa6c13ff16ea2cbc61c5626bb0402cf35e220e06f",
+      "bytes": 18800
+    },
+    {
+      "file": "public/api/v1/state/oh.json",
+      "sha256": "4a0d6480f3539eb376807b5467f691958881b198e73d3533d0f6e62c1fc3e37a",
+      "bytes": 18796
+    },
+    {
+      "file": "public/api/v1/state/ok.json",
+      "sha256": "2b72c32c87169ac77e291a40555409fcfb49efe3d2bd3364eafab9f627dc4537",
+      "bytes": 18795
+    },
+    {
+      "file": "public/api/v1/state/or.json",
+      "sha256": "98eeea5ec9ebbaf5c51a6b611884805a06b6813c2c9d18c9af13a6ff26170fb5",
+      "bytes": 18800
+    },
+    {
+      "file": "public/api/v1/state/pa.json",
+      "sha256": "fd1010b56310c6957cf0db45fe4ee966f068174a86b759c9486a8e665ae28059",
+      "bytes": 18805
+    },
+    {
+      "file": "public/api/v1/state/ri.json",
+      "sha256": "4a835ea80898b4ada660cde487ba0c3fb13a806636ffa64afa923c50c9236a4e",
+      "bytes": 18806
+    },
+    {
+      "file": "public/api/v1/state/sc.json",
+      "sha256": "b58ad265cde7197703b205d41c2b222a06fc3604d1b53364dcbb252b7d20259c",
+      "bytes": 18803
+    },
+    {
+      "file": "public/api/v1/state/sd.json",
+      "sha256": "024ab8b1fdd1179624290cd6f21319d6e26396bbb5fe862a96a5f157f2b7d3df",
+      "bytes": 18802
+    },
+    {
+      "file": "public/api/v1/state/tn.json",
+      "sha256": "1e01ae68e733a8c3c386789813346b316b8f2185415912451c18d9a3014d5fd2",
+      "bytes": 18800
+    },
+    {
+      "file": "public/api/v1/state/tx.json",
+      "sha256": "792faeb04c26be7d07cb4618d62491bbdc14811b5ccabab8c24eb163fa90088b",
+      "bytes": 18802
+    },
+    {
+      "file": "public/api/v1/state/ut.json",
+      "sha256": "df0b775d0044d59dc29fcb4311d0bcc64ac8ab78ad5e6058643473544b8e97f0",
+      "bytes": 18796
+    },
+    {
+      "file": "public/api/v1/state/va.json",
+      "sha256": "e4c4ac12a042b7f1ef110968475e29db91b8aeac8951cae64f01c2a8ef4e1990",
+      "bytes": 18801
+    },
+    {
+      "file": "public/api/v1/state/vt.json",
+      "sha256": "0aa7bb0546efc92b6c45f06b211872388e0be982427f1eb15dad336960b3facb",
+      "bytes": 18800
+    },
+    {
+      "file": "public/api/v1/state/wa.json",
+      "sha256": "49fb12f51f7c1b0dad494e799c4aacb04cb3678652bd96be06aedb6973186ee2",
+      "bytes": 18805
+    },
+    {
+      "file": "public/api/v1/state/wi.json",
+      "sha256": "6430abac59316bd4fe4cb7afde34e9e9596ee41cc26d51882287827743d8cbd0",
+      "bytes": 18798
+    },
+    {
+      "file": "public/api/v1/state/wv.json",
+      "sha256": "f5e7a776d9991dc9420aa375a134d015d05a89b44e5675c7d0e38e5637e15a3b",
+      "bytes": 18803
+    },
+    {
+      "file": "public/api/v1/state/wy.json",
+      "sha256": "faf4ba6035ab25f0dc2e5f9db703f40404278f36c9a4c687b0a3d67cd0fdb865",
+      "bytes": 18796
+    },
+    {
+      "file": "public/api/v1/procedure/all-on-4.json",
+      "sha256": "1aa0ad7c0c7d5909ea4607d7b03ec55810e0921497465c01799af9d571cf175e",
+      "bytes": 10154
+    },
+    {
+      "file": "public/api/v1/procedure/braces.json",
+      "sha256": "54d97881722357036c1ef0f246fabc58564b26c2ac41b83ca2b474f2a9ec4981",
+      "bytes": 10527
+    },
+    {
+      "file": "public/api/v1/procedure/composite-filling.json",
+      "sha256": "87fe0d6d4557b3a559ef643cde7e1890669a1f4af683cf36c561fdc657773b83",
+      "bytes": 9826
+    },
+    {
+      "file": "public/api/v1/procedure/deep-cleaning-srp.json",
+      "sha256": "4f3d1db1987c1bc4394cfe9a95a78490ad410e28118366a720b82c3db251587f",
+      "bytes": 9878
+    },
+    {
+      "file": "public/api/v1/procedure/dental-crown.json",
+      "sha256": "4e9c87649ba4f718df869893de1e2697cc10f2913d06e43604589271e80071be",
+      "bytes": 10468
+    },
+    {
+      "file": "public/api/v1/procedure/dental-implant.json",
+      "sha256": "638e93187cd471f2553ba3533a76c368104b5fe756d9bffbf8c3cf78c3a2f637",
+      "bytes": 10545
+    },
+    {
+      "file": "public/api/v1/procedure/dentures.json",
+      "sha256": "b27f1269779369d6804b5a62df404cbed4ccb3c813b8df7fe6480a17ac60ec89",
+      "bytes": 10512
+    },
+    {
+      "file": "public/api/v1/procedure/exam-cleaning-xrays.json",
+      "sha256": "27c8d2635a3ada59cde0f1b05be342ffb98fe8c9b56fd045f0c563bbf07f32f0",
+      "bytes": 9823
+    },
+    {
+      "file": "public/api/v1/procedure/porcelain-veneer.json",
+      "sha256": "e3d470a9314b316fb98206b6ee6580b626f35011f494c394e548e011bc2f6e9e",
+      "bytes": 10461
+    },
+    {
+      "file": "public/api/v1/procedure/root-canal.json",
+      "sha256": "9fc695ce6ec688121fae3e90c9f46450848e409e1b924e12d0ed3a97777a5339",
+      "bytes": 9935
+    },
+    {
+      "file": "public/api/v1/procedure/teeth-whitening.json",
+      "sha256": "889acbaa33539f49893632e7369bd363ae6fd6bdddeda9ac6554d311213552a9",
+      "bytes": 9815
+    },
+    {
+      "file": "public/api/v1/procedure/tooth-extraction.json",
+      "sha256": "601bf03c7c19a92e8e71bc1d697ae1dcf343a87c8dc89084e15d5938c7b3a2cd",
+      "bytes": 9807
+    },
+    {
+      "file": "public/data/us-dental-insurance-acceptance-by-state-2026.csv",
+      "sha256": "90c4607ddfab2597b86548d740de388d2b5249283802fa8c06f6c8e42311cc4e",
+      "bytes": 3901
+    },
+    {
+      "file": "data/medicaid-ortho-implant-policy.json",
+      "sha256": "4a3082d87ae4c0ef86c98f7c41eab3f31f7c658e8021107bddcc6419cc26c09e",
+      "bytes": 91796
+    },
+    {
+      "file": "data/free-dental-programs-by-state.json",
+      "sha256": "a8ff9097af4b34779faae3dbb7ff58bb1222e1c84fec8f5645404cbef416d4fd",
+      "bytes": 114387
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ak.json",
+      "sha256": "4c63d1d203ff0321ec5de9b99b1978b3ee40a201e4f11d2555b73903292d3506",
+      "bytes": 43405
+    },
+    {
+      "file": "data/medicaid-fee-schedules/al.json",
+      "sha256": "cc49a94bdf164d92c3a5de932828a9c770390eb93b19902603d953cdebc51699",
+      "bytes": 16045
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ar.json",
+      "sha256": "e550af9361af4bf2e7519ba42fc8b85d6c727607f6d61bc0ba90bfebfa04923e",
+      "bytes": 17316
+    },
+    {
+      "file": "data/medicaid-fee-schedules/az.json",
+      "sha256": "4df56c078dc73a252962d30eac639cbf3663ce782a2ff573b68856b2e020c526",
+      "bytes": 79293
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ca.json",
+      "sha256": "ff9fd74ffe13f41640e90689a23e9e44416225a0262eccc58294e27a75c2ff24",
+      "bytes": 98833
+    },
+    {
+      "file": "data/medicaid-fee-schedules/co.json",
+      "sha256": "26c9bd16d8d2c565bc7d95197185ea7dc669202356dc889a73bbdcd6b8f07711",
+      "bytes": 60283
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ct.json",
+      "sha256": "4c3ebf48b439d16a5431537efd77dc11a79a7102406f6f5363f815189df3f3fb",
+      "bytes": 48412
+    },
+    {
+      "file": "data/medicaid-fee-schedules/dc.json",
+      "sha256": "aa95a0faf70e0c310a6cc415b0944dd854cfb506d93044d56927cb82289be497",
+      "bytes": 102858
+    },
+    {
+      "file": "data/medicaid-fee-schedules/de.json",
+      "sha256": "14cca70aaa7c6bdece96d9f51f5905105118e3a44b270c918e7937edb289a15b",
+      "bytes": 110966
+    },
+    {
+      "file": "data/medicaid-fee-schedules/fl.json",
+      "sha256": "1cbbb36e5a11a5874400af0b7e0fc8d4173369b7e7b3bcde09a6d6fd60dc5178",
+      "bytes": 25882
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ga.json",
+      "sha256": "d9108acbd43f5e689108e27c1e337f9704c9200da45ddc00ef9afb24aaf5a566",
+      "bytes": 20456
+    },
+    {
+      "file": "data/medicaid-fee-schedules/hi.json",
+      "sha256": "d37b0d12b4cd1dd873af6bfce697c52df1dccdab5c11712bc5a889c011c22a32",
+      "bytes": 25082
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ia.json",
+      "sha256": "9194ec5421098ab05d3705ecaa99d279843c4fd07a6d4d844ef96ebf83ef5afd",
+      "bytes": 55960
+    },
+    {
+      "file": "data/medicaid-fee-schedules/id.json",
+      "sha256": "e5ee938fff5a268cd78e8edd88735a3fe6c7c493045261c369a4c85898c8a8c3",
+      "bytes": 16798
+    },
+    {
+      "file": "data/medicaid-fee-schedules/il.json",
+      "sha256": "7dae38a6dfa991666daff30d9050ffa949fa462e3feccc376d3c6d26139749f3",
+      "bytes": 30317
+    },
+    {
+      "file": "data/medicaid-fee-schedules/in.json",
+      "sha256": "83efbb652bc378a7240a7aa76efd231d83d9df31bdb40c77e4f3b612bf168d3f",
+      "bytes": 100771
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ks.json",
+      "sha256": "7b97ef002def8223aeb8de62133cb45e57edb0510fe7f70ef225cf0a2b8862fd",
+      "bytes": 31809
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ky.json",
+      "sha256": "afdf9e4d1d285bb28566235295d6fbe7318021710ffc94015e7afc5c6deba096",
+      "bytes": 32036
+    },
+    {
+      "file": "data/medicaid-fee-schedules/la.json",
+      "sha256": "7ff93ecce227d2e81c604aa2a7b608c39a143d7d3d70a87aa2f722ef15e82acd",
+      "bytes": 17938
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ma.json",
+      "sha256": "ca60f72a1674f649b6adcaf36283c09bea4aebae235de2e04d5c5deac1140803",
+      "bytes": 26783
+    },
+    {
+      "file": "data/medicaid-fee-schedules/md.json",
+      "sha256": "825ff1d71fcf43852a07aed342a1f33195d691913cde101b958dbf8288e8e992",
+      "bytes": 27559
+    },
+    {
+      "file": "data/medicaid-fee-schedules/me.json",
+      "sha256": "36aa5a4a44f0373cd8e3a4890fdaadb10e65f783ae823497dcdb4a79f3017df7",
+      "bytes": 35114
+    },
+    {
+      "file": "data/medicaid-fee-schedules/mi.json",
+      "sha256": "fa4552667e1c1e5d50dceb736f0879f3e9faf392d95e5f5b1c188f5445fe9bd2",
+      "bytes": 31592
+    },
+    {
+      "file": "data/medicaid-fee-schedules/mn.json",
+      "sha256": "36b07b22f979e0579954fbd3215e7dbba6606f78704ead53513233cb8b01b1bf",
+      "bytes": 137967
+    },
+    {
+      "file": "data/medicaid-fee-schedules/mo.json",
+      "sha256": "3427803d9b6a051613e5026ea2782767d9e6f5c398ca9a021fbe617b415363b7",
+      "bytes": 107411
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ms.json",
+      "sha256": "a526817c7f7d2cec6b51e9f4dce0d21254b4bc2dbddb0e254ad182270a132586",
+      "bytes": 27574
+    },
+    {
+      "file": "data/medicaid-fee-schedules/mt.json",
+      "sha256": "ef45e2f41e19d09048ec50c65b6893981cc7a16cad8c8c5bb32d3d9b18d39814",
+      "bytes": 36058
+    },
+    {
+      "file": "data/medicaid-fee-schedules/nc.json",
+      "sha256": "521f0eea694832d9ddb1253201790fc63fd7c541cab0540e6c7dc60ae012c25a",
+      "bytes": 28500
+    },
+    {
+      "file": "data/medicaid-fee-schedules/nd.json",
+      "sha256": "901da430964831f552a2e378978e54d5050c8e658e277630dd77d2310fbe70e1",
+      "bytes": 59868
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ne.json",
+      "sha256": "9d90dd9accc8c6edd104ef03d2b0f8a640f86890f1fa7ce6f84866c9ba7d021e",
+      "bytes": 25296
+    },
+    {
+      "file": "data/medicaid-fee-schedules/nh.json",
+      "sha256": "f41a83aa3d84c0ff07506dac3263588d2671570ff184cc9184c4f7d702bf7fc0",
+      "bytes": 54393
+    },
+    {
+      "file": "data/medicaid-fee-schedules/nj.json",
+      "sha256": "1c38349c29d3399685c9fd8f88cab1cfc0f21ef9ffa7c542af506e84e609a1e0",
+      "bytes": 68522
+    },
+    {
+      "file": "data/medicaid-fee-schedules/nm.json",
+      "sha256": "bbcffacb256fed98274563e6232a295397a2fc1f7c5e175c214b9901fb4893f9",
+      "bytes": 40445
+    },
+    {
+      "file": "data/medicaid-fee-schedules/nv.json",
+      "sha256": "2fe31281c2a596bccd3a028869525a556821e08b30d5e52186836b5ce04ed063",
+      "bytes": 46597
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ny.json",
+      "sha256": "fef056409c1357721c719e8de59de0fb2d739f790d4be10598d357b5b2cca942",
+      "bytes": 52125
+    },
+    {
+      "file": "data/medicaid-fee-schedules/oh.json",
+      "sha256": "9df701df6b27beaf9fa99956c0ec12ac984f2003c7fd9750ec1ae9f7a2b82f77",
+      "bytes": 34779
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ok.json",
+      "sha256": "d81554a6ace2a290c96f86ec20b3e430830ddd7b7632e594240c8b49ca8982ae",
+      "bytes": 48116
+    },
+    {
+      "file": "data/medicaid-fee-schedules/or.json",
+      "sha256": "2d00a348194435c55cfa24b18baf3ee62c555adbe4aa71dbce573bcbb5148c72",
+      "bytes": 38768
+    },
+    {
+      "file": "data/medicaid-fee-schedules/pa.json",
+      "sha256": "84bd0c275e7182f688ec37e9ef2e26fdca177317f5dcdeb8c2369f002b9e99f4",
+      "bytes": 22854
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ri.json",
+      "sha256": "b760b206868d4a96ceafea432db3c9ea17d5803f7ca945b359ce32522aad6f20",
+      "bytes": 47533
+    },
+    {
+      "file": "data/medicaid-fee-schedules/sc.json",
+      "sha256": "cc7029f3d5da98ce90d52d3377c646c66a00a5c0a80f9f0fef43aea137aeaa9f",
+      "bytes": 13512
+    },
+    {
+      "file": "data/medicaid-fee-schedules/sd.json",
+      "sha256": "fc78395aa3a8ab1841dfe46e43a1ce16045201c905dd86a7f3868dd0f3b9acfd",
+      "bytes": 27434
+    },
+    {
+      "file": "data/medicaid-fee-schedules/tn.json",
+      "sha256": "6c7d1c814f67e66168a96f3206749c8886e9d39d9d8069b032a8c9003f5ba0b1",
+      "bytes": 91650
+    },
+    {
+      "file": "data/medicaid-fee-schedules/tx.json",
+      "sha256": "c95f99e7bbb9e37bd03eb2e22d97c16943611ed239fc7997cfb7fa8ad2be6f51",
+      "bytes": 52169
+    },
+    {
+      "file": "data/medicaid-fee-schedules/ut.json",
+      "sha256": "7ad4d71c56156b763dc4d227517f5a6cf3fb52b6d41574f0272b13df3a8fd5ba",
+      "bytes": 101537
+    },
+    {
+      "file": "data/medicaid-fee-schedules/va.json",
+      "sha256": "a75613cea0fbf42423f06efb295456dd2276925f1a513f828d4ef6e20804138b",
+      "bytes": 35085
+    },
+    {
+      "file": "data/medicaid-fee-schedules/vt.json",
+      "sha256": "cb0c00f462192cfed1df2b980f59adc47c61ab26e6830a0352a4ce98be4ac704",
+      "bytes": 70010
+    },
+    {
+      "file": "data/medicaid-fee-schedules/wa.json",
+      "sha256": "420d3bf7aa1bbf287a7622e0b66c696480ef274c684b7912849df00c1884bb24",
+      "bytes": 28590
+    },
+    {
+      "file": "data/medicaid-fee-schedules/wi.json",
+      "sha256": "92216a7bcda66e688f86f338645a28365a701991c6bdb105c78dedf17011b35c",
+      "bytes": 49272
+    },
+    {
+      "file": "data/medicaid-fee-schedules/wv.json",
+      "sha256": "57cac801e98e0f314581258e066fae94cb39226806d567abaed2ada7adba79a8",
+      "bytes": 42188
+    },
+    {
+      "file": "data/medicaid-fee-schedules/wy.json",
+      "sha256": "594176ac236adf628d90c7b376ecd9649486a757f30fa2c9dc00b3c4afb4d9cc",
+      "bytes": 95763
+    },
+    {
+      "file": "public/data/us-dental-deserts-atlas-2026.csv",
+      "sha256": "bc9a083bf253590d123245aa63e6f1af7e62347ce5d996aca34c01517fdb4970",
+      "bytes": 1515161
+    },
+    {
+      "file": "public/data/atlas/AK.json",
+      "sha256": "e1e15f88bda6f615d16aab7b4e6d083ddd1b2cda8480b7715c75356acb8e5f34",
+      "bytes": 7225
+    },
+    {
+      "file": "public/data/atlas/AL.json",
+      "sha256": "c36b23b91beac8cc0d1f39b07aa08e13292574fa93d6a810a3650786b428e302",
+      "bytes": 15028
+    },
+    {
+      "file": "public/data/atlas/AR.json",
+      "sha256": "f7eb93f4eb0fd9ab8733aebace5cdc5fac1530534d4071e178124affe2623c98",
+      "bytes": 16584
+    },
+    {
+      "file": "public/data/atlas/AZ.json",
+      "sha256": "19829bcc4828dd61a86552381240bcdb0a982c660a1e2d77247c6be3e8357680",
+      "bytes": 3921
+    },
+    {
+      "file": "public/data/atlas/CA.json",
+      "sha256": "8c03fea737a0f79449c1b5e27d5b94fce6e843f9fe8ec80861701bdec14a7ede",
+      "bytes": 13180
+    },
+    {
+      "file": "public/data/atlas/CO.json",
+      "sha256": "217adcf1052850c8f913dceb06b685c9c1cf51eec17ef2ef743c06d40934871b",
+      "bytes": 14328
+    },
+    {
+      "file": "public/data/atlas/CT.json",
+      "sha256": "95f80aaed5d78c189792f2c3024ead96b2ba1cab4b7a26722868b1aad9807779",
+      "bytes": 2751
+    },
+    {
+      "file": "public/data/atlas/DC.json",
+      "sha256": "bc4c567e3b09e01d0b97d92e17a88d0c6df59bb43468a10eeb3bad5b5e196173",
+      "bytes": 755
+    },
+    {
+      "file": "public/data/atlas/DE.json",
+      "sha256": "df99a13f505807725c4b4afdf58d99f9d49c1e5fb601c0092726d8185c5af7d4",
+      "bytes": 1223
+    },
+    {
+      "file": "public/data/atlas/FL.json",
+      "sha256": "751a348ace5d87dc61a70b0a34a5c957ecae60ea397ae3e2a143e28e976fb708",
+      "bytes": 14977
+    },
+    {
+      "file": "public/data/atlas/GA.json",
+      "sha256": "f43e94d587847b75253ab9d9c7d33ddd2b5fd1df8c36dce329cfc27194596848",
+      "bytes": 34512
+    },
+    {
+      "file": "public/data/atlas/HI.json",
+      "sha256": "0c1f4133928d758669bd0ce0f431018a072a90f241c27d358c443c9c61106764",
+      "bytes": 1646
+    },
+    {
+      "file": "public/data/atlas/IA.json",
+      "sha256": "baa7e2750d6bce8edf9f6935e5207aded8c4b5cbb1b2426403b64c14b2695434",
+      "bytes": 21711
+    },
+    {
+      "file": "public/data/atlas/ID.json",
+      "sha256": "aceac29c711bab42bbfc733ddacfadc93559c0bafa807c8e6163f0a523a49331",
+      "bytes": 9952
+    },
+    {
+      "file": "public/data/atlas/IL.json",
+      "sha256": "9e244870306668c62b524632321d9cca3fb5e15de936afe8699fc0736da4735e",
+      "bytes": 22521
+    },
+    {
+      "file": "public/data/atlas/IN.json",
+      "sha256": "545e65980c520ec51ac2d8c28deb5aa61ee58af4f4a7597e5c78bbcc8a550a2a",
+      "bytes": 20170
+    },
+    {
+      "file": "public/data/atlas/KS.json",
+      "sha256": "aef65b6e0d545f6a4c89061b8a8204ed6bbf0b23477f5cbac679682f71ab3e6e",
+      "bytes": 22929
+    },
+    {
+      "file": "public/data/atlas/KY.json",
+      "sha256": "f03d8691e4777f5a4fbf66023ce1010eadfcc0d2ca26ffe4720dccac4ecbcc45",
+      "bytes": 26001
+    },
+    {
+      "file": "public/data/atlas/LA.json",
+      "sha256": "841107de0ad84dcb901dab343d0fde54f7c3432f04859539fe12fb8580f37dd9",
+      "bytes": 14404
+    },
+    {
+      "file": "public/data/atlas/MA.json",
+      "sha256": "1159a87e0fd466f32f91dc461ed1de6f4a8501f32260b0d8e0d7b88cf486be31",
+      "bytes": 3632
+    },
+    {
+      "file": "public/data/atlas/MD.json",
+      "sha256": "f8c82c0a3f0057f4bffcd4e4e56eb1d2cce0afbf7f492752a253601ecb8e9e53",
+      "bytes": 5787
+    },
+    {
+      "file": "public/data/atlas/ME.json",
+      "sha256": "2dd5290095135844dc8755cff57851b665db1f2d4340d0f6e13383d804a6c956",
+      "bytes": 3995
+    },
+    {
+      "file": "public/data/atlas/MI.json",
+      "sha256": "a0133fd2f7fe61322d3f49d5cdb12915cc1bdf2da28102a96b7ec06572c17788",
+      "bytes": 18401
+    },
+    {
+      "file": "public/data/atlas/MN.json",
+      "sha256": "e0470d2ec8b7ab83ac7770b89452dd0739ffeadc3b3bc2a61f0bc6f1caec9bc0",
+      "bytes": 19122
+    },
+    {
+      "file": "public/data/atlas/MO.json",
+      "sha256": "f5557e87521ffb9b23a1d95c821f889f9227f35e1a201b56ff95568bd864149b",
+      "bytes": 25169
+    },
+    {
+      "file": "public/data/atlas/MS.json",
+      "sha256": "ec6e917e267cbe1c5dbe916ed221d85173e6d2881564b0924f21e1f078eeace9",
+      "bytes": 18118
+    },
+    {
+      "file": "public/data/atlas/MT.json",
+      "sha256": "035229bc8ef4947020c6fcfa09ffe002a56fd802172ba3873b42802c9b57d7b8",
+      "bytes": 12520
+    },
+    {
+      "file": "public/data/atlas/NC.json",
+      "sha256": "f71e89b5b1fcb3a1d72ed604e5e80365dab0dae268929a0d3d386b567a549794",
+      "bytes": 22008
+    },
+    {
+      "file": "public/data/atlas/ND.json",
+      "sha256": "2e1525ed20d3abb0178dbd965225884150091088a71423c914cf71b583196153",
+      "bytes": 11833
+    },
+    {
+      "file": "public/data/atlas/NE.json",
+      "sha256": "93856f774473caae7a9359da550554997961e7cb54034cdf55f3a2ad84816394",
+      "bytes": 20316
+    },
+    {
+      "file": "public/data/atlas/NH.json",
+      "sha256": "c3ded96af69b77eca1c9adef7fc5cf4f48028d2dfd77954ec9964bd1244debcb",
+      "bytes": 2735
+    },
+    {
+      "file": "public/data/atlas/NJ.json",
+      "sha256": "3e21fd0ae5946e3c779920193205953c4de0b9ca92eadcbb82048f814c7d4b6c",
+      "bytes": 5115
+    },
+    {
+      "file": "public/data/atlas/NM.json",
+      "sha256": "40ef8dbe02b1c89cd43bcb0182a49ab28b189a250bed3442671940004948c531",
+      "bytes": 7577
+    },
+    {
+      "file": "public/data/atlas/NV.json",
+      "sha256": "13d16c2029494d321e8c5c3259c84cbd00b8774d99212189df8fe882a42dcfd5",
+      "bytes": 4181
+    },
+    {
+      "file": "public/data/atlas/NY.json",
+      "sha256": "6ef8d4659d8aea6d4ebe3c45b1f615c12e97b7943f3309b94a36271522da1b36",
+      "bytes": 14101
+    },
+    {
+      "file": "public/data/atlas/OH.json",
+      "sha256": "9575edef5e7b0a103cb99094874dc03c20409d90f09e852a706817094c673491",
+      "bytes": 19424
+    },
+    {
+      "file": "public/data/atlas/OK.json",
+      "sha256": "29c41c7772e4b37601080f529227b9482c1571868931d5035ff7316089e81461",
+      "bytes": 17155
+    },
+    {
+      "file": "public/data/atlas/OR.json",
+      "sha256": "43bba486f8ff82396fff456aa228f7c36c86b0cabee46e93055d31f5c045c5d4",
+      "bytes": 8382
+    },
+    {
+      "file": "public/data/atlas/PA.json",
+      "sha256": "1fdb1a2624114cccf4c7f650b28134945deccd34f73e0bc1ca96bd6ee34dbba4",
+      "bytes": 14909
+    },
+    {
+      "file": "public/data/atlas/RI.json",
+      "sha256": "4a4e9170aad0572c97784ef5b555eb70fd9328d9658d653b88b71aca842d29f3",
+      "bytes": 1667
+    },
+    {
+      "file": "public/data/atlas/SC.json",
+      "sha256": "88cf84ac4457c7c1a6c5b2821a2e4620ad8c81d346ce65a0493280ed43f7cfeb",
+      "bytes": 10527
+    },
+    {
+      "file": "public/data/atlas/SD.json",
+      "sha256": "3f5e9d4f492aedc1524abd1bbe850da19d22300652091760b76157c2e7d21335",
+      "bytes": 14599
+    },
+    {
+      "file": "public/data/atlas/TN.json",
+      "sha256": "19088e7de3aa3cd356eace361ee3e7abe1df95daa84d656481994536cfaf8264",
+      "bytes": 20779
+    },
+    {
+      "file": "public/data/atlas/TX.json",
+      "sha256": "391c98afe27cf5a1e02f5efce28be92de766f7e7034c33b5c98dc484f1c7d9f9",
+      "bytes": 55399
+    },
+    {
+      "file": "public/data/atlas/UT.json",
+      "sha256": "e81faf641ec7388cdee10847ac3c94bb4cc81f7bdddf5235748e6dca00f2d223",
+      "bytes": 6774
+    },
+    {
+      "file": "public/data/atlas/VA.json",
+      "sha256": "996ba9831de95e4190eb11bd58de52fe8f44d4bc5a8348e64bcb341cf0942a74",
+      "bytes": 29034
+    },
+    {
+      "file": "public/data/atlas/VT.json",
+      "sha256": "c04cdefc81b659e68db54536a3a814771617cfdf1800b86801297629214038aa",
+      "bytes": 3539
+    },
+    {
+      "file": "public/data/atlas/WA.json",
+      "sha256": "78b99982147d7c82adf1181895895d52e44438fe34dedf2e83ecff89b0ef8ec7",
+      "bytes": 8961
+    },
+    {
+      "file": "public/data/atlas/WI.json",
+      "sha256": "f3bb374a22d4dbd3168223027d9148d1a85939d53a7487e93ce402e5ebde775c",
+      "bytes": 16018
+    },
+    {
+      "file": "public/data/atlas/WV.json",
+      "sha256": "11f70f7ebaee76070eedfdb6129d37b487420108690f5f14a2c2f9295ee046eb",
+      "bytes": 12292
+    },
+    {
+      "file": "public/data/atlas/WY.json",
+      "sha256": "d0f01ccdf284f7684d401c0ae4e2e85f9cbb52ea7b629de1c09d2beb37292ec1",
+      "bytes": 5469
+    },
+    {
+      "file": "public/api/v1/chains/affordable-dentures-implants.json",
+      "sha256": "57c728d338109d77d552efee71724ad444cfb2d5aad1d56dd3e8978eaa9389d6",
+      "bytes": 1605050
+    }
+  ],
+  "outputs": [
+    {
+      "file": "medicaid.json",
+      "sha256": "ac07c723bc569f454b066b2fd7dbd21d6a369c914c3c3a6a253863f498924257",
+      "bytes": 3574743
+    },
+    {
+      "file": "states.json",
+      "sha256": "76054118394ae456aaaf0f31efdeac6bd1a694429eb36bd84aa4611539c5ade7",
+      "bytes": 396740
+    },
+    {
+      "file": "procedures.json",
+      "sha256": "b49b2147b7be2c9a50f820eeb31045605e5c7c9be7b7578a7d127e82ea5a45bf",
+      "bytes": 12030
+    },
+    {
+      "file": "rules.json",
+      "sha256": "a0a5459146d44b4a136fe9bdae71b65c6c06934ccc8902a197af982cef21dbe5",
+      "bytes": 116396
+    },
+    {
+      "file": "options.json",
+      "sha256": "4942e8e9aaff0bc723bb59d19f9d5d478e65ec5f1a0f7699bb0643001816b741",
+      "bytes": 554783
+    },
+    {
+      "file": "chains.json",
+      "sha256": "7de6d628a0cddef1f5584a3ebf98794a2f5a370ae0c46692066a98a742e11758",
+      "bytes": 8728
+    }
+  ],
+  "issues": [
+    "IN: acceptance CSV level=extensive vs API v1 state=limited",
+    "KS: acceptance CSV level=extensive vs API v1 state=limited",
+    "NV: acceptance CSV level=emergency_only vs API v1 state=limited",
+    "OK: acceptance CSV level=extensive vs API v1 state=limited",
+    "D0602/CT: official_fee.source_url differs from fee-schedule file source_url",
+    "D2740/CT: official_fee.source_url differs from fee-schedule file source_url"
+  ]
+}

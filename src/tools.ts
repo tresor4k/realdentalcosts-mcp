@@ -2,10 +2,10 @@
  * Shared tool registration for realdentalcosts-mcp, used by both the stdio
  * binary (src/index.ts) and the Streamable HTTP entry point (src/http.ts).
  *
- * createServer() with no options registers the 4 tools exactly as the stdio
- * server always did. createServer({ appsSdk: true }) additionally returns
- * `structuredContent` and declares the ChatGPT Apps SDK widget
- * (ui://widget/price-card.html, text/html+skybridge).
+ * createServer() registers 3 price tools + 4 treatment-plan tools (the modelled
+ * out-of-pocket tool was removed). createServer({ appsSdk: true }) additionally
+ * returns `structuredContent` and declares the ChatGPT Apps SDK widgets
+ * (ui://widget/price-card.html and ui://widget/plan-card.html, text/html+skybridge).
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -15,9 +15,10 @@ import {
   COMPARE_STATES,
   COMPARE_PRICES,
 } from "./lib/compare-data.js";
-import { outOfPocket, nationalTriple, PROC_LABELS_ES } from "./lib/pricing.js";
+import { nationalTriple, PROC_LABELS_ES } from "./lib/pricing.js";
 import { findCity, suggestCities } from "./lib/cities.js";
-import { WIDGET_URI, WIDGET_MIME, WIDGET_HTML } from "./widget.js";
+import { WIDGET_URI, WIDGET_MIME, WIDGET_HTML, PLAN_WIDGET_URI, PLAN_WIDGET_HTML } from "./widget.js";
+import { benchmarkTreatmentPlan, medicaidAdultDentalRules, medicaidPaidByCode, lowCostDentalOptions } from "./lib/rdc.js";
 
 const SOURCE = "Real Dental Costs — US Dental Cost Index 2026";
 const API_BASE = "https://realdentalcosts.com/api/v1";
@@ -134,6 +135,24 @@ function cardUrl(procedure: string, lang: "en" | "es", stateSlug?: string): stri
       : procedureById.get(procedure)?.link ?? "/en/compare/";
   return `${base}${path}?${UTM}`;
 }
+
+/**
+ * Aggregate-only usage log (HTTP mode): per-tool call counts per UTC day, written to
+ * stderr at most once a minute and at exit. No arguments, IP, headers or user agent.
+ */
+const usage = new Map<string, number>();
+let usageFlushedAt = Date.now();
+function flushUsage() {
+  if (!usage.size) return;
+  process.stderr.write(JSON.stringify({ evt: "usage", day: new Date().toISOString().slice(0, 10), counts: Object.fromEntries(usage) }) + "\n");
+  usage.clear();
+  usageFlushedAt = Date.now();
+}
+function countCall(tool: string) {
+  usage.set(tool, (usage.get(tool) ?? 0) + 1);
+  if (Date.now() - usageFlushedAt >= 60_000) flushUsage();
+}
+process.once("exit", flushUsage);
 
 export interface CreateServerOptions {
   /** Add structuredContent + openai/outputTemplate and the price-card widget resource. */
@@ -314,69 +333,6 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
-// 3. out_of_pocket_estimate
-// ---------------------------------------------------------------------------
-server.registerTool(
-  "out_of_pocket_estimate",
-  {
-    title: "Out-of-pocket dental cost estimate",
-    description:
-      'Estimate what a patient actually pays for a dental procedure in a given state under a payment mode: "cash" (full list price), "insurance" (typical US PPO plan: preventive ~100%, basic ~80% up to a $1,500 annual max, major/ortho ~50% up to the same max, cosmetic/implants not covered), or "savings_plan" (dental discount plan, ~20-40% off list price). Example: procedure="crown", state="TX", mode="insurance". Market research pricing data, not medical or financial advice.',
-    inputSchema: {
-      procedure: procedureEnum,
-      state: stateEnum,
-      mode: z
-        .enum(["cash", "insurance", "savings_plan"])
-        .describe('Payment mode: "cash", "insurance", or "savings_plan".'),
-      lang: langSchema,
-    },
-    ...toolMeta,
-  },
-  async ({ procedure, state, mode, lang }) => {
-    const proc = procedureById.get(procedure);
-    if (!proc) {
-      return errorResult(`Unknown procedure "${procedure}". Valid: ${PROCEDURE_IDS.join(", ")}.`);
-    }
-    const triple = COMPARE_PRICES[state][procedure];
-    const payMode = mode === "savings_plan" ? "savings" : (mode as "cash" | "insurance");
-    const { vals, note } = outOfPocket(triple, proc.cat, payMode);
-    const payload = {
-      source: SOURCE,
-      reference_url: refUrl("/dental-insurance/", lang),
-      api_url: `${API_BASE}/procedure/${PROC_SLUGS[procedure]}.json`,
-      procedure: {
-        id: procedure,
-        label: procedureLabel(procedure, lang),
-        category: proc.cat,
-        basis: proc.basis,
-        basisNote: BASIS_NOTES[proc.basis]?.[lang],
-      },
-      state,
-      mode,
-      listPrice: { low: triple[0], avg: triple[1], high: triple[2], currency: "USD" },
-      estimatedOutOfPocket: {
-        low: Math.round(vals[0]),
-        avg: Math.round(vals[1]),
-        high: Math.round(vals[2]),
-        currency: "USD",
-      },
-      assumptions: note,
-      disclaimer: disclaimer(lang),
-    };
-    return jsonResult(payload, {
-      title: `${payload.procedure.label} (${mode})`,
-      location: stateByCode.get(state)?.name ?? state,
-      low: payload.estimatedOutOfPocket.low,
-      avg: payload.estimatedOutOfPocket.avg,
-      high: payload.estimatedOutOfPocket.high,
-      avgLabel: lang === "es" ? "Pago estimado de bolsillo" : "Estimated out-of-pocket",
-      rangeNote: note,
-      url: cardUrl(procedure, lang, stateByCode.get(state)?.slug),
-    });
-  },
-);
-
-// ---------------------------------------------------------------------------
 // 4. dental_national_average
 // ---------------------------------------------------------------------------
 server.registerTool(
@@ -457,8 +413,155 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
+// 4-7. Treatment-plan checker (observed, sourced amounts only; plan-card widget)
+// ---------------------------------------------------------------------------
+const planMeta = (invoking: string) =>
+  appsSdk
+    ? {
+        _meta: {
+          "openai/outputTemplate": PLAN_WIDGET_URI,
+          "openai/toolInvocation/invoking": invoking,
+          "openai/toolInvocation/invoked": "Sourced figures ready",
+        },
+      }
+    : {};
+const readOnly = { readOnlyHint: true, openWorldHint: false, destructiveHint: false };
+const NOTE =
+  " Every figure carries its source URL and period; a missing cell returns status no_source_at_this_level with the next level up. Medicaid amounts are paid per claim line (T-MSIS), not a consumer price. Pricing research, not medical, coding or insurance advice. No personal data (age, ZIP, name, insurer) is requested or stored.";
+
+if (appsSdk) {
+  server.registerResource(
+    "plan-card",
+    PLAN_WIDGET_URI,
+    { title: "Dental treatment plan card", mimeType: WIDGET_MIME },
+    async () => ({
+      contents: [
+        {
+          uri: PLAN_WIDGET_URI,
+          mimeType: WIDGET_MIME,
+          text: PLAN_WIDGET_HTML,
+          _meta: {
+            "openai/widgetDescription":
+              "Line-by-line check of a dental treatment plan against sourced references: state cash band, Medicaid paid per claim line (T-MSIS), official fee schedule, plus the state's adult Medicaid rule and source notes.",
+            "openai/widgetPrefersBorder": true,
+            "openai/widgetCSP": { connect_domains: [], resource_domains: [] },
+          },
+        },
+      ],
+    }),
+  );
+}
+
+server.registerTool(
+  "benchmark_treatment_plan",
+  {
+    title: "Check a dental treatment plan line by line",
+    description:
+      'Compare each line of a dental treatment plan (CDT code or procedure id, optional quantity and quoted price) with three sourced references for the state: the Real Dental Costs cash band (observed or estimated badge), what Medicaid paid per claim line (T-MSIS p25/median/p75) and the official Medicaid fee schedule (with its children_only scope flag), plus the state\'s adult Medicaid rule. Example: state="AZ", lines=[{code:"D2740", quoted_usd:1450},{code:"D4341", qty:4, quoted_usd:1100}]. quoted_usd is the line total as quoted.' +
+      NOTE,
+    inputSchema: {
+      state: stateEnum,
+      lines: z
+        .array(
+          z.object({
+            code: z.string().regex(/^[Dd]\d{4}$/).optional().describe('CDT code, e.g. "D2740".'),
+            procedure: procedureEnum.optional().describe("Procedure id, when no CDT code is known."),
+            qty: z.number().int().min(1).max(32).optional().describe("Quantity (default 1)."),
+            quoted_usd: z.number().min(0).max(500000).optional().describe("Quoted price for the whole line, USD."),
+          }),
+        )
+        .min(1)
+        .max(10)
+        .describe("Plan lines (1-10; split longer plans). Each line needs a code or a procedure."),
+      coverage: z
+        .enum(["none", "medicaid_adult", "private", "medicare_advantage", "discount_plan"])
+        .default("none")
+        .describe("Coverage category only (no plan or insurer name)."),
+      lang: langSchema,
+    },
+    annotations: readOnly,
+    ...planMeta("Checking the plan against sourced references…"),
+  },
+  async ({ state, lines, coverage, lang }) => {
+    if (lines.some((l) => !l.code && !l.procedure)) return errorResult("Each line needs a CDT code or a procedure id.");
+    logCall("benchmark_treatment_plan");
+    return planResult(benchmarkTreatmentPlan(state, lines, coverage, lang));
+  },
+);
+
+server.registerTool(
+  "medicaid_adult_dental_rules",
+  {
+    title: "Adult Medicaid dental rule for a US state",
+    description:
+      'The state\'s adult Medicaid dental coverage level with its sources: program summary, annual cap (or no_source_at_this_level), orthodontics and implants policy (verified/silent/not_verified with a quote), share of dentists billing Medicaid (T-MSIS 2023-2024) and the official fee schedule (URL, effective date, scope). Example: state="TX".' +
+      NOTE,
+    inputSchema: { state: stateEnum, lang: langSchema },
+    annotations: readOnly,
+    ...planMeta("Reading the state's Medicaid dental rule…"),
+  },
+  async ({ state, lang }) => {
+    logCall("medicaid_adult_dental_rules");
+    return planResult(medicaidAdultDentalRules(state, lang));
+  },
+);
+
+server.registerTool(
+  "medicaid_paid_by_code",
+  {
+    title: "Medicaid paid per claim line for a CDT code",
+    description:
+      'What Medicaid paid per claim line (T-MSIS 2018-2024) for one of 61 CDT codes: national figures and series, the state cell with its rank and official fee when a state is given, and the national cash band for context. Example: code="D2740", state="OH".' +
+      NOTE,
+    inputSchema: {
+      code: z.string().regex(/^[Dd]\d{4}$/).describe('CDT code, e.g. "D2740".'),
+      state: stateEnum.optional(),
+      lang: langSchema,
+    },
+    annotations: readOnly,
+    ...planMeta("Reading Medicaid paid amounts…"),
+  },
+  async ({ code, state, lang }) => {
+    logCall("medicaid_paid_by_code");
+    return planResult(medicaidPaidByCode(code, state, lang));
+  },
+);
+
+server.registerTool(
+  "low_cost_dental_options",
+  {
+    title: "Lower-cost dental care options in a US state",
+    description:
+      'Verified lower-cost routes in a state: dental schools (name, city, URL, check date), health centers and dental shortage-area (HPSA) designations, Mission of Mercy, charity programs; with an optional county for the dental-desert atlas row. Dental-school clinic prices are not published by Real Dental Costs. Example: state="OH", county="Franklin".' +
+      NOTE,
+    inputSchema: {
+      state: stateEnum,
+      county: z.string().min(2).max(60).optional().describe('County name, e.g. "Franklin".'),
+      lang: langSchema,
+    },
+    annotations: readOnly,
+    ...planMeta("Finding lower-cost options…"),
+  },
+  async ({ state, county, lang }) => {
+    logCall("low_cost_dental_options");
+    return planResult(lowCostDentalOptions(state, county, lang));
+  },
+);
+
+// ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
+function logCall(tool: string) {
+  if (appsSdk) countCall(tool);
+}
+
+function planResult(payload: Record<string, unknown>) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(payload) }],
+    ...(appsSdk ? { structuredContent: payload } : {}),
+  };
+}
+
 function jsonResult(payload: Record<string, unknown>, card?: PriceCard) {
   return {
     content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],

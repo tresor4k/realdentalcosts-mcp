@@ -8,8 +8,8 @@
 numbers floating around the web are guesses, ad copy, or averages nobody can
 trace back to a source. This server hands your assistant a structured,
 citable dataset instead: 12 common dental procedures, priced across all 51
-US states (including DC) and 200+ cities, plus the insurance-coverage math
-that turns a list price into what a patient actually pays out of pocket.
+US states (including DC) and 200+ cities, plus a line-by-line treatment-plan
+checker built only on sourced, dated figures.
 
 Data comes from the **Real Dental Costs US Dental Cost Index 2026** — an
 openly published dataset (DOI below), not a scrape or an estimate pulled from
@@ -80,19 +80,27 @@ city: "Los Angeles"   state: "CA"
   Implants avg $4,500 (CA implant band $4,780 – $7,290)
 ```
 
-### `out_of_pocket_estimate`
+### Treatment-plan tools
 
-What a patient actually pays under `cash`, `insurance` (typical US PPO:
-preventive ~100%, basic ~80% up to a $1,500 annual max, major/ortho ~50% up
-to the same max, cosmetic/implants not covered), or `savings_plan` (~20-40%
-network discount).
+Every figure carries its `source_url` and `period` (or `effective_date`); a missing
+cell returns `status: "no_source_at_this_level"` with the next level up, never a
+number. Medicaid amounts are *paid per claim line (T-MSIS)*, not a consumer price.
 
-```
-procedure: "crown"   state: "TX"   mode: "insurance"
-→ List price: $955 – $1,250 – $2,130
-  Estimated out-of-pocket: $478 – $625 – $1,065
-  "Major tier: plan typically pays ~50%, up to the $1,500 annual max."
-```
+- `benchmark_treatment_plan` — `state`, `lines[{code|procedure, qty?, quoted_usd?}]`
+  (1-10), `coverage?` (category only). Per line: state cash band (observed /
+  estimated badges), Medicaid paid p25/median/p75, official fee schedule with its
+  `schedule_scope`, position of the quote; plus the state's adult Medicaid rule.
+  Codes outside the 61 published CDT codes return `not_covered`.
+- `medicaid_adult_dental_rules` — level, program summary, annual cap, ortho and
+  implant policy with quotes, share of dentists billing Medicaid, fee schedule.
+- `medicaid_paid_by_code` — `code`, `state?`: national figures and 2018-2024 series,
+  state cell, rank and official fee.
+- `low_cost_dental_options` — `state`, `county?`: dental schools, health centers and
+  shortage-area designations, Mission of Mercy, charity programs, county atlas row.
+
+The modelled `out_of_pocket_estimate` tool was removed. Data is synced from the
+published API v1 with `npm run sync-data` (manifest with sha256 in
+`src/data/rdc/manifest.json`). Privacy: `GET /privacy` on the HTTP entry point.
 
 ### `dental_national_average`
 

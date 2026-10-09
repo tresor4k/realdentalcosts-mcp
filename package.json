@@ -1,7 +1,7 @@
 {
   "name": "realdentalcosts-mcp",
   "version": "0.2.0",
-  "description": "Look up real US dental prices from your AI assistant: 12 procedures across all 51 states, 200+ cities, cash vs insurance out-of-pocket estimates — data from the Real Dental Costs research index (EN/ES).",
+  "description": "Look up real US dental prices from your AI assistant: 12 procedures across all 51 states, 200+ cities, line-by-line treatment-plan checks against sourced Medicaid and cash references — data from the Real Dental Costs research index (EN/ES).",
   "type": "module",
   "license": "MIT",
   "author": "tresor4k",
@@ -41,7 +41,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && node -e \"require('node:fs').cpSync('src/data','dist/data',{recursive:true})\"",
     "prepublishOnly": "npm run build",
-    "test": "npm run build && node test/smoke.mjs",
+    "test": "npm run build && node test/smoke.mjs && node test/golden.mjs && node test/sources.mjs && node test/api-parity.mjs",
+    "sync-data": "node scripts/sync-data.mjs",
     "start": "node dist/index.js",
     "test:http": "npm run build && node test/http-smoke.mjs"
   },
