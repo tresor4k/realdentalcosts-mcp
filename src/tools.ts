@@ -282,7 +282,7 @@ server.registerTool(
   {
     title: "Dental cost by US state",
     description:
-      'Use this when the user asks what a dental procedure costs in a given US state (51 incl. DC), or how a state sits next to the US average, for one of 12 procedures: exam and cleaning, filling, deep cleaning, extraction, root canal, crown, implant, All-on-4, dentures, braces, veneer, whitening. Returns the state cash band (low / average / high), the national band, the gap in percent and the state\'s Restorative Cost Index, each with its basis (observed or estimated). Phrasings: "how much is a crown in Ohio without insurance", "what do people in Florida pay for a root canal", "¿cuánto cuesta un implante dental en Texas?", "costo de una limpieza dental en California". ' +
+      'Use this when the user asks what a dental procedure costs in a given US state (51 incl. DC), or how a state sits next to the US average, for one of 12 procedures: exam and cleaning, filling, deep cleaning, extraction, root canal, crown, implant, All-on-4, dentures, braces, veneer, whitening. Returns the state cash band (low / average / high), the national band, the gap in percent and the state\'s Restorative Cost Index, each with its basis (observed or estimated). Phrasings: "how much is a crown in Ohio without insurance", "what do people in Florida pay for a root canal", "¿cuánto cuesta un implante dental en Texas?", "costo de una limpieza dental en California". When the user already has an amount quoted by their dentist and asks whether it is normal, use benchmark_treatment_plan instead: it places the quoted amount against this band line by line. ' +
       DO_NOT +
       STAMP,
     inputSchema: {
@@ -586,7 +586,7 @@ server.registerTool(
   {
     title: "Low-cost dental care options in a US state",
     description:
-      'Use this when the user in a US state looks for low-cost or free dental care. Returns verified routes: dental schools (name, city, URL, check date), health centers and dental shortage-area (HPSA) designations, Mission of Mercy events and charity programs, with an optional county for the dental-desert atlas row. Dental-school clinic fees are not published by Real Dental Costs. Phrasings: "where can I get dental work on a tight budget in Columbus", "dental school clinics that see patients in Ohio", "¿dónde hay dentistas gratis en Illinois?", "clínicas dentales de bajo costo en Franklin County".' +
+      'Use this when the user in a US state looks for low-cost or free dental care. Returns verified routes: dental schools (name, city, URL, check date), health centers and dental shortage-area (HPSA) designations, Mission of Mercy events and charity programs, with an optional county for the dental-desert atlas row. Dental-school clinic fees are not published by Real Dental Costs. Phrasings: "where can I get dental work on a tight budget in Columbus", "dental school clinics that see patients in Ohio", "¿dónde hay dentistas gratis en Illinois?", "clínicas dentales de bajo costo en Franklin County". Also use it when the user asks whether their county is a dental shortage area or where the community health centers are.' +
       NOTE,
     inputSchema: {
       state: stateEnum,

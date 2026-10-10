@@ -83,7 +83,7 @@
     { "id": "mp-i5", "for_tool": "medicaid_paid_by_code", "lang": "es", "kind": "indirect", "prompt": "¿Qué tarifa oficial tiene Medicaid para el código D0150 en Georgia?", "expected_tool": "medicaid_paid_by_code" },
     { "id": "mp-n1", "for_tool": "medicaid_paid_by_code", "lang": "en", "kind": "negative", "prompt": "What does code D2740 mean and when should a dentist bill it?", "expected_tool": "none" },
     { "id": "mp-n2", "for_tool": "medicaid_paid_by_code", "lang": "en", "kind": "negative", "prompt": "How much does Aetna pay in-network for D2740?", "expected_tool": "none" },
-    { "id": "mp-n3", "for_tool": "medicaid_paid_by_code", "lang": "es", "kind": "negative", "prompt": "¿Cuánto paga el seguro público de Canadá por una limpieza dental?", "expected_tool": "none" },
+    { "id": "mp-n3", "for_tool": "medicaid_paid_by_code", "lang": "es", "kind": "negative", "prompt": "¿Cuánto paga el seguro público de México por una limpieza dental?", "expected_tool": "none" },
 
     { "id": "lo-d1", "for_tool": "low_cost_dental_options", "lang": "en", "kind": "direct", "prompt": "Use Real Dental Costs to list dental schools and free clinics in Ohio.", "expected_tool": "low_cost_dental_options" },
     { "id": "lo-d2", "for_tool": "low_cost_dental_options", "lang": "en", "kind": "direct", "prompt": "Real Dental Costs: low-cost dental options in Harris County, Texas.", "expected_tool": "low_cost_dental_options" },
@@ -179,7 +179,7 @@
     { "id": "mc-i5", "for_tool": "medicare_dental_check", "lang": "es", "kind": "indirect", "prompt": "¿Las partes A y B cubren algo del dentista para personas mayores?", "expected_tool": "medicare_dental_check" },
     { "id": "mc-n1", "for_tool": "medicare_dental_check", "lang": "en", "kind": "negative", "prompt": "Which 2027 Medicare Advantage plan in Miami has the biggest dental allowance?", "expected_tool": "none" },
     { "id": "mc-n2", "for_tool": "medicare_dental_check", "lang": "en", "kind": "negative", "prompt": "Does Medicare cover hearing aids?", "expected_tool": "none" },
-    { "id": "mc-n3", "for_tool": "medicare_dental_check", "lang": "es", "kind": "negative", "prompt": "¿El sistema de salud de Canadá para mayores paga el dentista?", "expected_tool": "none" },
+    { "id": "mc-n3", "for_tool": "medicare_dental_check", "lang": "es", "kind": "negative", "prompt": "¿El sistema público de salud del Reino Unido paga el dentista a los mayores?", "expected_tool": "none" },
     { "id": "pc-d1", "for_tool": "dental_program_changes", "lang": "en", "kind": "direct", "prompt": "Use Real Dental Costs to list the Texas Medicaid dental rate changes that took effect this September.", "expected_tool": "dental_program_changes" },
     { "id": "pc-d2", "for_tool": "dental_program_changes", "lang": "en", "kind": "direct", "prompt": "Ask Real Dental Costs which state Medicaid dental caps started in 2026.", "expected_tool": "dental_program_changes" },
     { "id": "pc-d3", "for_tool": "dental_program_changes", "lang": "en", "kind": "direct", "prompt": "With Real Dental Costs, show dated Medicaid dental changes for Nevada.", "expected_tool": "dental_program_changes" },
