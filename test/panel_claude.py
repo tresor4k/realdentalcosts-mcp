@@ -36,9 +36,11 @@ def run(p):
             "expected": exp, "called": called, "ok": ok, "error": err}
 
 tools = sorted({p["for_tool"] for p in P})
-sel = [p for t in tools for p in pick(t, "indirect", 3) + pick(t, "negative", 2)]
+ids = sys.argv[sys.argv.index("--ids") + 1].split(",") if "--ids" in sys.argv else None  # rejouer quelques prompts
+sel = [p for p in P if p["id"] in ids] if ids else [p for t in tools for p in pick(t, "indirect", 3) + pick(t, "negative", 2)]
 with ThreadPoolExecutor(4) as ex: res = list(ex.map(run, sel))
-json.dump(res, open(os.path.join(ROOT, "test", "panel-claude-2026-10-10.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+out = "panel-claude-rerun.json" if ids else "panel-claude-2026-10-10.json"
+json.dump(res, open(os.path.join(ROOT, "test", out), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 for t in tools:
     for k in ("indirect", "negative"):
         r = [x for x in res if x["tool"] == t and x["kind"] == k]

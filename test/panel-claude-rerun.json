@@ -1,0 +1,79 @@
+[
+ {
+  "id": "bp-i1",
+  "tool": "benchmark_treatment_plan",
+  "kind": "indirect",
+  "lang": "en",
+  "prompt": "My dentist in Arizona wants 1,450 for a porcelain crown on tooth 19 (D2740). Is that a normal amount?",
+  "expected": "benchmark_treatment_plan",
+  "called": "dental_cost_by_state",
+  "ok": false,
+  "error": null
+ },
+ {
+  "id": "bp-i4",
+  "tool": "benchmark_treatment_plan",
+  "kind": "indirect",
+  "lang": "es",
+  "prompt": "Mi dentista en Texas me cobra 1,600 por una corona (D2740). ¿Está dentro de lo normal?",
+  "expected": "benchmark_treatment_plan",
+  "called": "dental_cost_by_state",
+  "ok": false,
+  "error": null
+ },
+ {
+  "id": "mp-n3",
+  "tool": "medicaid_paid_by_code",
+  "kind": "negative",
+  "lang": "es",
+  "prompt": "¿Cuánto paga el seguro público de México por una limpieza dental?",
+  "expected": "none",
+  "called": null,
+  "ok": true,
+  "error": null
+ },
+ {
+  "id": "lo-i2",
+  "tool": "low_cost_dental_options",
+  "kind": "indirect",
+  "lang": "en",
+  "prompt": "Is my county in West Virginia a dental shortage area, and where are the health centers?",
+  "expected": "low_cost_dental_options",
+  "called": null,
+  "ok": false,
+  "error": null
+ },
+ {
+  "id": "mc-n3",
+  "tool": "medicare_dental_check",
+  "kind": "negative",
+  "lang": "es",
+  "prompt": "¿El sistema público de salud del Reino Unido paga el dentista a los mayores?",
+  "expected": "none",
+  "called": null,
+  "ok": true,
+  "error": null
+ },
+ {
+  "id": "pc-i4",
+  "tool": "dental_program_changes",
+  "kind": "indirect",
+  "lang": "es",
+  "prompt": "¿Desde qué fecha tiene Massachusetts un tope anual para el dentista en MassHealth?",
+  "expected": "dental_program_changes",
+  "called": "medicaid_adult_dental_rules",
+  "ok": false,
+  "error": null
+ },
+ {
+  "id": "pc-n1",
+  "tool": "dental_program_changes",
+  "kind": "negative",
+  "lang": "en",
+  "prompt": "What will Congress change in Medicare dental coverage next year?",
+  "expected": "none",
+  "called": "medicare_dental_check",
+  "ok": false,
+  "error": null
+ }
+]
