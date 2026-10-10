@@ -1,0 +1,4 @@
+*.exe
+server.json
+.env
+node_modules/
