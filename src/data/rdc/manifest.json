@@ -1,5 +1,5 @@
 {
-  "synced_at": "2026-10-09T08:30:32.073Z",
+  "synced_at": "2026-10-10T08:43:48.974Z",
   "api_generated_at": "2026-10-01T07:28:32.762Z",
   "site_dir": "../dentist/web",
   "inputs": [
@@ -634,6 +634,11 @@
       "bytes": 91796
     },
     {
+      "file": "mcp:data/medicaid-adult-dental-caps-2026.json",
+      "sha256": "da8f42525fc1401c1da23655d0725c25eeeeec81a41f8f8578e296985670a808",
+      "bytes": 41441
+    },
+    {
       "file": "data/free-dental-programs-by-state.json",
       "sha256": "a8ff9097af4b34779faae3dbb7ff58bb1222e1c84fec8f5645404cbef416d4fd",
       "bytes": 114387
@@ -1177,8 +1182,8 @@
     },
     {
       "file": "rules.json",
-      "sha256": "a0a5459146d44b4a136fe9bdae71b65c6c06934ccc8902a197af982cef21dbe5",
-      "bytes": 116396
+      "sha256": "c92a7df6a7f756151d832fa0d45b9e75e81757a946a9121b9b59338dce6d5e1e",
+      "bytes": 150263
     },
     {
       "file": "options.json",

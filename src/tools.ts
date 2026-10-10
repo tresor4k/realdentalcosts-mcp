@@ -494,7 +494,7 @@ server.registerTool(
   {
     title: "Adult Medicaid dental rule for a US state",
     description:
-      'The state\'s adult Medicaid dental coverage level with its sources: program summary, annual cap (or no_source_at_this_level), orthodontics and implants policy (verified/silent/not_verified with a quote), share of dentists billing Medicaid (T-MSIS 2023-2024) and the official fee schedule (URL, effective date, scope). Example: state="TX".' +
+      'The state\'s adult Medicaid dental coverage level with its sources: program summary, annual dollar cap (cap_kind annual_dollar_cap | no_dollar_cap | emergency_only | no_adult_benefit | not_verified, with a verbatim quote), orthodontics and implants policy (verified/silent/not_verified with a quote), share of dentists billing Medicaid (T-MSIS 2023-2024) and the official fee schedule (URL, effective date, scope). Example: state="TX".' +
       NOTE,
     inputSchema: { state: stateEnum, lang: langSchema },
     annotations: readOnly,

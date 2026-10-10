@@ -300,7 +300,6 @@ export function medicaidAdultDentalRules(st: string, lang: Lang): Any {
     p
       ? { ...p, period: p.source_date ?? `consulted ${r.policy_consulted}` }
       : { status: "not_verified" };
-  const edition = `API v1 edition ${day(s.generated_at)}`;
   return {
     tool: "medicaid_adult_dental_rules",
     state: { code: st, name: s.name },
@@ -324,12 +323,14 @@ export function medicaidAdultDentalRules(st: string, lang: Lang): Any {
       ? { sources_disagree: `API v1 level "${level}" vs program summary level "${progLevel}" (two RDC sources; both shown, neither recomputed)` }
       : {}),
     annual_cap:
-      r.cap_usd != null
-        ? { status: "ok", cap_usd: r.cap_usd, source_url: ACC_CSV, period: edition }
+      r.cap && r.cap.cap_kind !== "not_verified"
+        ? { status: "ok", ...r.cap }
         : {
-            status: "no_source_at_this_level",
+            status: "not_verified",
+            cap_kind: "not_verified",
             geo: "state",
             field: "adult annual dental cap",
+            ...(r.cap?.note ? { note: r.cap.note } : {}),
             next_level: { geo: "national", status: "no_source_at_this_level", reason: "No national cap exists; the cap must come from the state's own documents." },
           },
     orthodontics: pol(r.ortho),

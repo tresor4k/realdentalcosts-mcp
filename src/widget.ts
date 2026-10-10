@@ -190,7 +190,7 @@ export const PLAN_WIDGET_HTML = `<!doctype html>
     root.appendChild(el("h3", null, "Adult Medicaid rule — " + r.state.name));
     root.appendChild(el("p", null, "Level: " + r.level.value + (r.program_summary && r.program_summary.summary ? " — " + r.program_summary.summary : "")));
     if (r.sources_disagree) root.appendChild(el("p", "note warn", r.sources_disagree));
-    root.appendChild(el("p", "note", "Annual cap: " + (r.annual_cap.status === "ok" ? usd(r.annual_cap.cap_usd) : "no source at state level")));
+    root.appendChild(el("p", "note", "Annual cap: " + (r.annual_cap.status !== "ok" ? "not verified" : r.annual_cap.cap_usd != null ? usd(r.annual_cap.cap_usd) + " (" + r.annual_cap.period + ")" : r.annual_cap.cap_kind.replace(/_/g, " "))));
     root.appendChild(el("p", "note", "Implants (adults): " + (r.implants.adult_21plus || r.implants.status) + " · Orthodontics (adults): " + (r.orthodontics.adult_21plus || r.orthodontics.status)));
     if (r.dentists_billing_medicaid.status === "ok") root.appendChild(el("p", "note", r.dentists_billing_medicaid.pct + "% of active dentists billed Medicaid (" + r.dentists_billing_medicaid.period + ")"));
     if (r.fee_schedule.status === "ok") root.appendChild(el("p", "note", "Fee schedule effective " + r.fee_schedule.effective_date + " · scope " + r.fee_schedule.schedule_scope));

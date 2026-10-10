@@ -45,7 +45,6 @@ function csv(text) {
   const [h, ...body] = rows;
   return body.map((v) => Object.fromEntries(h.map((k, i) => [k, v[i] ?? ""])));
 }
-const num = (s) => (s === "" || s == null ? null : Number(s));
 const pick = (o, keys) => o == null ? null : Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, o[k]]));
 
 // ---------------------------------------------------------------------------
@@ -131,6 +130,11 @@ for (const f of procFiles) {
 const ACC = "public/data/us-dental-insurance-acceptance-by-state-2026.csv";
 const acc = Object.fromEntries(csv(read(ACC)).map((r) => [r.code, r]));
 const policy = json("data/medicaid-ortho-implant-policy.json");
+// Adult annual dollar cap: curated in THIS repo (one row = one verbatim quote), not in the site.
+const CAPS = "data/medicaid-adult-dental-caps-2026.json";
+const capsBuf = fs.readFileSync(path.join(root, CAPS));
+inputs.push({ file: `mcp:${CAPS}`, sha256: sha(capsBuf), bytes: capsBuf.length });
+const caps = Object.fromEntries(JSON.parse(capsBuf.toString("utf8")).states.map((c) => [c.state, c]));
 const free = json("data/free-dental-programs-by-state.json");
 const FEE = "data/medicaid-fee-schedules";
 const feeFiles = fs.readdirSync(path.join(site, FEE)).filter((f) => /^[a-z]{2}\.json$/.test(f)).sort();
@@ -152,6 +156,7 @@ const options = {};
 const issues = [];
 for (const code of Object.keys(states).sort()) {
   const a = acc[code];
+  if (!caps[code]) issues.push(`${code}: no row in ${CAPS}`);
   const pol = policy.states.find((s) => s.code === code);
   const fr = free.states.find((s) => s.code === code);
   const atlas = json(`public/data/atlas/${code}.json`);
@@ -161,7 +166,9 @@ for (const code of Object.keys(states).sort()) {
   const slimPol = (p) =>
     p && pick(p, ["status", "under21", "adult_21plus", "note", "quote", "source_url", "source_title", "source_date"]);
   rules[code] = {
-    cap_usd: a ? num(a.medicaid_adult_dental_cap_usd) : null,
+    cap: caps[code]
+      ? pick(caps[code], ["cap_usd", "cap_kind", "period", "source_url", "source_title", "retrieved_at", "quote", "cross_check_url", "cross_check_quote", "note"])
+      : null,
     csv_level: a?.medicaid_adult_dental_level ?? null,
     program: fr
       ? pick(fr.adult_medicaid, ["level", "level_label", "summary", "official_fee_schedule_url", "fee_schedule_effective_date", "checked_at", "source"])

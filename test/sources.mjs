@@ -6,6 +6,7 @@
  * Also fails if a cell flagged nominal_amounts_suspected exposes any dollar figure.
  * The nearest marked ancestor decides; the root may not carry a source_url.
  * Sweeps every state, every one of the 61 codes, and the golden plans; also checks size.
+ * Caps table: fails if a cap_usd is set without source_url + a verbatim quote containing the number.
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
@@ -75,6 +76,25 @@ for (const code of CODES) {
 await check("low_cost_dental_options", { state: "OH", county: "Franklin" });
 await check("low_cost_dental_options", { state: "OH", county: "Nowhere" });
 await check("benchmark_treatment_plan", { state: "AZ", lines: [{ code: "D2740", quoted_usd: 1450 }, { code: "D3330", quoted_usd: 1350 }, { code: "D4341", qty: 4, quoted_usd: 1100 }, { code: "D0367", quoted_usd: 350 }] });
+// Annual-cap table: one row = one proof. A figure needs a source_url and a verbatim quote containing it.
+const caps = JSON.parse(fs.readFileSync(path.join(root, "data", "medicaid-adult-dental-caps-2026.json"), "utf8")).states;
+const KINDS = ["annual_dollar_cap", "no_dollar_cap", "emergency_only", "no_adult_benefit", "not_verified"];
+if (caps.length !== 51 || new Set(caps.map((c) => c.state)).size !== 51) errors.push(`caps table: ${caps.length} rows, expected 51 distinct states`);
+for (const c of caps) {
+  if (!KINDS.includes(c.cap_kind)) errors.push(`caps ${c.state}: unknown cap_kind ${c.cap_kind}`);
+  if (c.cap_kind === "not_verified" && c.cap_usd != null) errors.push(`caps ${c.state}: not_verified with a figure`);
+  if (c.cap_kind !== "not_verified" && !(c.source_url && c.quote && c.retrieved_at)) errors.push(`caps ${c.state}: ${c.cap_kind} without source_url + quote + retrieved_at`);
+  if (c.cap_usd != null) {
+    const forms = [String(c.cap_usd), c.cap_usd.toLocaleString("en-US")];
+    if (typeof c.cap_usd !== "number" || !c.source_url || typeof c.quote !== "string" || !forms.some((f) => c.quote.includes(f)))
+      errors.push(`caps ${c.state}: cap_usd=${c.cap_usd} not backed by source_url + a quote containing the number`);
+    if (c.quote && c.quote.length > 300) errors.push(`caps ${c.state}: quote longer than 300 chars`);
+  }
+  const sc = (await client.callTool({ name: "medicaid_adult_dental_rules", arguments: { state: c.state } })).structuredContent;
+  calls++;
+  if ((sc.annual_cap.cap_usd ?? null) !== (c.cap_kind === "not_verified" ? null : c.cap_usd))
+    errors.push(`caps ${c.state}: tool cap ${sc.annual_cap.cap_usd} != table ${c.cap_usd}`);
+}
 await client.close();
 
 console.log(`${calls} calls, ${numbers} numbers checked, ${nominal} nominal cells checked amount-free, largest response ${maxBytes} bytes`);
