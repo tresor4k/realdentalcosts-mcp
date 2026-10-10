@@ -1,5 +1,5 @@
 {
-  "synced_at": "2026-10-10T09:21:32.469Z",
+  "synced_at": "2026-10-10T09:45:27.261Z",
   "api_generated_at": "2026-10-01T07:28:32.762Z",
   "site_dir": "../dentist/web",
   "inputs": [
@@ -1187,6 +1187,16 @@
       "file": "lib/canada-data.ts",
       "sha256": "1f67e3181a7a9fda57af3e1148cfe94ef8996723b4929cdc37b919f19785a170",
       "bytes": 17907
+    },
+    {
+      "file": "data/tx-medicaid-dental-rate-change-2026-09.json",
+      "sha256": "b8de289bbe46946b1d2c7d48976135bf31ebd6d55853d192c736c4dc1068644f",
+      "bytes": 9166
+    },
+    {
+      "file": "mcp:data/medicare-dental-exclusion-2026.json",
+      "sha256": "00875397e3fefdf1323a7e9a5a757cf05266b2520e32560457f7b26d703b47c4",
+      "bytes": 2852
     }
   ],
   "outputs": [
@@ -1229,6 +1239,11 @@
       "file": "canada.json",
       "sha256": "b64103bee9fdfb43baea446a39f1999af1c0abfd55a6cc4c26fe0a696f45c21b",
       "bytes": 25713
+    },
+    {
+      "file": "programs.json",
+      "sha256": "2b2494b8e3202a16501685fe4e81229b38690af532680cbae56fab8877081d17",
+      "bytes": 8278
     }
   ],
   "issues": [

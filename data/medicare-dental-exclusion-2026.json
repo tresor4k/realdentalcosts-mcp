@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "rule": "Each quote is verbatim (whitespace-normalised) from the page fetched at retrieved_at, <= 300 characters.",
+    "built_at": "2026-10-10"
+  },
+  "quotes": [
+    {
+      "id": "original_medicare_rule_1",
+      "source_title": "medicare.gov, Dental services (What's covered?)",
+      "source_url": "https://www.medicare.gov/coverage/dental-services",
+      "retrieved_at": "2026-10-10T09:45:06Z",
+      "quote": "In most cases, Medicare doesn't cover dental services like routine cleanings, fillings, tooth extractions (removals), or items like dentures and implants."
+    },
+    {
+      "id": "original_medicare_rule_2",
+      "source_title": "medicare.gov, Dental services (What's covered?)",
+      "source_url": "https://www.medicare.gov/coverage/dental-services",
+      "retrieved_at": "2026-10-10T09:45:06Z",
+      "quote": "Medicare may cover: Some dental services you get when you're admitted as a hospital inpatient for your dental procedure, either because of your underlying medical condition or the severity of the procedure."
+    },
+    {
+      "id": "original_medicare_rule_3",
+      "source_title": "medicare.gov, Dental services (What's covered?)",
+      "source_url": "https://www.medicare.gov/coverage/dental-services",
+      "retrieved_at": "2026-10-10T09:45:06Z",
+      "quote": "Specific inpatient or outpatient dental services directly related to certain covered medical treatments."
+    },
+    {
+      "id": "statute",
+      "source_title": "Social Security Act section 1862(a)(12), 42 U.S.C. 1395y(a)(12) (text as reproduced by the Legal Information Institute, Cornell Law School)",
+      "source_url": "https://www.law.cornell.edu/uscode/text/42/1395y",
+      "retrieved_at": "2026-10-10T09:45:06Z",
+      "quote": "(12) where such expenses are for services in connection with the care, treatment, filling, removal, or replacement of teeth or structures directly supporting teeth"
+    },
+    {
+      "id": "regulation",
+      "source_title": "42 CFR 411.15(i) Dental services (eCFR, current)",
+      "source_url": "https://www.ecfr.gov/current/title-42/section-411.15",
+      "retrieved_at": "2026-10-10T09:45:06Z",
+      "quote": "Dental services in connection with the care, treatment, filling, removal, or replacement of teeth, or structures directly supporting the teeth."
+    },
+    {
+      "id": "enrollment_period",
+      "source_title": "medicare.gov, Joining a plan (enrollment periods table)",
+      "source_url": "https://www.medicare.gov/basics/get-started-with-medicare/get-more-coverage/joining-a-plan",
+      "retrieved_at": "2026-10-10T09:45:06Z",
+      "quote": "Open Enrollment Period October 15-December 7 Join, drop, or switch to another Medicare Advantage Plan with or without drug coverage (or add or drop drug coverage)."
+    }
+  ]
+}

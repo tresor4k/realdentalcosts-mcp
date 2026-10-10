@@ -40,7 +40,7 @@ await client.connect(transport);
 
 // --- tools/list ---
 const toolsList = await client.listTools();
-assert(toolsList.tools.length === 11, `tools/list returns 11 tools (got ${toolsList.tools.length})`);
+assert(toolsList.tools.length === 14, `tools/list returns 14 tools (got ${toolsList.tools.length})`);
 const toolNames = toolsList.tools.map((t) => t.name).sort();
 assert(
   JSON.stringify(toolNames) ===
@@ -50,6 +50,9 @@ assert(
       "cdcp_coverage_check",
       "compare_states",
       "us_dental_spending_stats",
+      "insurance_out_of_pocket",
+      "medicare_dental_check",
+      "dental_program_changes",
       "dental_cost_by_city",
       "dental_cost_by_state",
       "dental_national_average",

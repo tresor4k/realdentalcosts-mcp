@@ -279,7 +279,7 @@ ${BRIDGE}
     if (!d || !d.tool) return;
     var root = document.getElementById("root");
     root.textContent = "";
-    var titles = { benchmark_treatment_plan: "Treatment plan check", medicaid_adult_dental_rules: "Adult Medicaid dental rule", medicaid_paid_by_code: "Medicaid paid " + (d.code || ""), low_cost_dental_options: "Lower-cost dental options", compare_states: "States side by side", us_dental_spending_stats: "US dental spending (MEPS)", canada_dental_cost_by_province: "Dental costs by province", cdcp_coverage_check: "Canadian Dental Care Plan check" };
+    var titles = { benchmark_treatment_plan: "Treatment plan check", medicaid_adult_dental_rules: "Adult Medicaid dental rule", medicaid_paid_by_code: "Medicaid paid " + (d.code || ""), low_cost_dental_options: "Lower-cost dental options", compare_states: "States side by side", us_dental_spending_stats: "US dental spending (MEPS)", canada_dental_cost_by_province: "Dental costs by province", cdcp_coverage_check: "Canadian Dental Care Plan check", insurance_out_of_pocket: "Out-of-pocket estimate (your plan figures)", medicare_dental_check: "Medicare and dental care", dental_program_changes: "Dated dental program changes" };
     root.appendChild(el("h2", null, titles[d.tool] || "Real Dental Costs"));
     root.appendChild(el("p", "sub", (d.state ? d.state.name : d.province ? d.province.name + ", Canada" : "United States") + (d.label ? " · " + d.label : "")));
     if (d.tool === "benchmark_treatment_plan") plan(d, root);

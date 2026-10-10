@@ -5,7 +5,7 @@
  * so every number served by the app equals the open API v1.
  *
  * Usage: node scripts/sync-data.mjs [siteDir]   (default ../dentist/web, or RDC_SITE_DIR)
- * Writes src/data/rdc/{medicaid,states,procedures,rules,options,chains,meps,canada}.json and
+ * Writes src/data/rdc/{medicaid,states,procedures,rules,options,chains,meps,canada,programs}.json and
  * manifest.json (sha256 of every input and output file + sync date).
  */
 import fs from "node:fs";
@@ -356,6 +356,23 @@ canada.dataset = {
 };
 
 // ---------------------------------------------------------------------------
+// Lot C2: dated program changes (TX 2026-09 rate file, verbatim) + Medicare dental exclusion (curated in THIS repo)
+// ---------------------------------------------------------------------------
+const tx = json("data/tx-medicaid-dental-rate-change-2026-09.json");
+const MEDICARE = "data/medicare-dental-exclusion-2026.json";
+const medicareBuf = fs.readFileSync(path.join(root, MEDICARE));
+inputs.push({ file: `mcp:${MEDICARE}`, sha256: sha(medicareBuf), bytes: medicareBuf.length });
+const programs = {
+  tx_rate_change: {
+    ...pick(tx, ["code", "program", "effective_date", "previous_effective_date", "published_at", "news_url", "file_url", "hearing", "n_codes", "licence_note"]),
+    rows: tx.rows.map((r) => pick(r, ["code", "age_range", "setting", "fee_before", "fee_after", "pct_change"])),
+  },
+  medicare: JSON.parse(medicareBuf.toString("utf8")),
+};
+if (programs.tx_rate_change.rows.length !== tx.n_codes) issues.push(`tx rate change: ${tx.rows.length} rows vs n_codes ${tx.n_codes}`);
+for (const q of programs.medicare.quotes) if (q.quote.length > 300) issues.push(`medicare quote ${q.id} longer than 300 characters`);
+
+// ---------------------------------------------------------------------------
 // write + manifest
 // ---------------------------------------------------------------------------
 fs.mkdirSync(out, { recursive: true });
@@ -369,6 +386,7 @@ const files = {
   "chains.json": chainsOut,
   "meps.json": meps,
   "canada.json": canada,
+  "programs.json": programs,
 };
 for (const [name, data] of Object.entries(files)) {
   const buf = Buffer.from(JSON.stringify(data));

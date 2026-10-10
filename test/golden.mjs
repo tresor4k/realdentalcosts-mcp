@@ -118,6 +118,69 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
   assert(ok.county.status === "ok" && ok.county.fips, `Franklin County, OH found (${ok.county.fips})`);
 }
 
+// 5. Lot C2: insurance_out_of_pocket — the user's own figures x the state cash band, formula written out
+{
+  const crown = STATES.OH.procedures.crown;
+  const sc = await call("insurance_out_of_pocket", {
+    state: "OH",
+    coverage: "private",
+    deductible_remaining_usd: 50,
+    annual_max_remaining_usd: 1000,
+    coinsurance_by_class: { major: 50 },
+    lines: [{ procedure: "crown", class: "major" }, { procedure: "rootcanal" }],
+  });
+  const [l1, l2] = sc.lines;
+  const exp = (g) => { const plan = Math.min((g - 50) * 0.5, 1000); return Math.round((g - plan) * 100) / 100; };
+  assert(l1.status === "ok" && l1.cash_band.avg_usd === crown.avg_usd, `OH crown band = API (${crown.avg_usd})`);
+  assert(l1.estimate.at_avg.you_pay_usd === exp(crown.avg_usd) && l1.estimate.at_low.you_pay_usd === exp(crown.low_usd), `OH crown: you pay = gross - min((gross - 50) x 0.5, 1000) (${exp(crown.avg_usd)})`);
+  assert(l1.estimate.badge === "estimated" && /min\(/.test(sc.formula), "estimate badged estimated, formula written");
+  assert(l2.status === "parameter_missing" && !l2.estimate && l2.missing.some((m) => /coinsurance/.test(m)), "line without coinsurance → parameter_missing, not computed");
+  assert(sc.totals.lines_computed === 1, "totals over computed lines only");
+  const ma = await call("insurance_out_of_pocket", {
+    state: "FL",
+    coverage: "medicare_advantage",
+    deductible_remaining_usd: 0,
+    annual_max_remaining_usd: 500,
+    lines: [{ procedure: "implant", coinsurance_pct: 50 }, { procedure: "crown", coinsurance_pct: 50 }],
+  });
+  assert(ma.lines[0].estimate.at_avg.plan_pays_usd === 500 && ma.lines[1].estimate.at_avg.plan_pays_usd === 0, "annual maximum carried from line to line (500 then 0)");
+  assert(ma.lines[1].estimate.at_avg.annual_maximum_reached === true && /Evidence of Coverage/.test(ma.coverage.note), "MA: maximum reached flagged, plan document cited");
+  const none = await call("insurance_out_of_pocket", { state: "TX", coverage: "private", lines: [{ procedure: "filling", coinsurance_pct: 20 }] });
+  assert(none.lines[0].status === "parameter_missing" && none.totals.status === "not_computed" && numbersIn(none.totals) === 0, "no deductible / maximum given → nothing computed, no default assumed");
+}
+
+// 6. Lot C2: medicare_dental_check — statutory exclusion, verbatim quotes, MA plans not yet tracked
+{
+  const sc = await call("medicare_dental_check", { coverage: "not_sure" });
+  const om = sc.original_medicare;
+  assert(/replacement of teeth/.test(om.statute.quote) && /411\.15/.test(om.regulation.source) && om.medicare_gov.length === 3, "statute + regulation + medicare.gov quotes");
+  assert([om.statute, om.regulation, ...om.medicare_gov].every((q) => q.quote.length <= 300 && q.source_url.startsWith("https://") && q.retrieved_at), "quotes <= 300 chars with URL + retrieval date");
+  assert(sc.medicare_advantage.status === "not_yet_tracked" && sc.medicare_advantage.next_step.tool === "insurance_out_of_pocket", "MA plans not yet tracked → insurance_out_of_pocket");
+  assert(!/":-?\d/.test(JSON.stringify(sc)), "no numeric value at all");
+}
+
+// 7. Lot C2: dental_program_changes — dated, adopted changes; untracked states never read as "no change"
+{
+  const RULES = data("rules");
+  const PROG = data("programs");
+  const tx = await call("dental_program_changes", { state: "TX" });
+  const rate = tx.changes.find((c) => c.kind === "medicaid_fee_schedule_rate_change");
+  assert(rate && rate.effective_date === PROG.tx_rate_change.effective_date && rate.rows.length === PROG.tx_rate_change.rows.length, `TX rate change ${PROG.tx_rate_change.effective_date}, ${PROG.tx_rate_change.rows.length} codes`);
+  const odd = PROG.tx_rate_change.rows.filter((r) => !/^\d{1,2}-(\d|1\d|20)$/.test(r.age_range)).length;
+  const flagged = rate.rows.filter((r) => r.age_range_status);
+  assert(odd > 0 && flagged.length === odd && flagged.every((r) => r.age_range === null), `TX: ${odd} rows with an implausible age range in the source extract are flagged, not passed off as parsed`);
+  const co = await call("dental_program_changes", { state: "CO" });
+  const cap = co.changes.find((c) => c.kind === "adult_dental_cap_effective");
+  assert(cap && cap.effective_date === "2026-07-01" && cap.cap_usd === RULES.CO.cap.cap_usd && cap.quote === RULES.CO.cap.quote, `CO cap effective 2026-07-01 = caps table (${RULES.CO.cap.cap_usd})`);
+  const wv = await call("dental_program_changes", { state: "WV", to: "2025-01-01" });
+  assert(wv.changes.some((c) => c.kind === "adult_dental_cap_effective" && c.effective_date === "2024-07-01"), "WV cap effective 2024-07-01, period filter applied");
+  const untracked = Object.keys(RULES).find((s) => s !== "TX" && !RULES[s].schedule?.effective_date && !/effective|on and after|and on/i.test(RULES[s].cap?.period ?? ""));
+  const u = await call("dental_program_changes", { state: untracked });
+  assert(u.status === "not_yet_tracked" && u.changes.length === 0 && !/no change/i.test(JSON.stringify(u)), `${untracked}: not_yet_tracked, never "no change"`);
+  const q3 = await call("dental_program_changes", { from: "2026-07-01", to: "2026-09-30" });
+  assert(q3.changes.every((c) => c.effective_date >= "2026-07-01" && c.effective_date <= "2026-09-30") && q3.changes.some((c) => c.state === "TX") && q3.states_not_yet_tracked.includes(untracked), "period filter across states + list of untracked states");
+}
+
 await client.close();
 console.log(failures ? `\n${failures} golden check(s) failed.` : "\nAll golden checks passed.");
 process.exit(failures ? 1 : 0);

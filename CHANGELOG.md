@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased] - lot C2 (2026-10-10, not deployed)
+
+- `insurance_out_of_pocket`: the user's own plan figures (deductible left, annual maximum left, coinsurance per line or per user-named class; `private` or `medicare_advantage`) applied to the state cash band, low / average / high, formula written out, badge `estimated`; a missing parameter leaves the line uncomputed (no default deductible, maximum, class or percentage; no insurer name).
+- `medicare_dental_check`: Original Medicare's statutory dental exclusion (SSA 1862(a)(12), 42 CFR 411.15(i), medicare.gov), verbatim quotes <= 300 characters re-read live on 2026-10-10 (`data/medicare-dental-exclusion-2026.json`); 2027 Medicare Advantage plans `not_yet_tracked`, hand-off to `insurance_out_of_pocket`.
+- `dental_program_changes`: Texas rate change of 2026-09-01 (47 codes; 3 rows whose age range is implausible in the source extract are flagged, not parsed), fee-schedule effective dates, adult cap effective dates stated in the caps table; filters by state and period; untracked states return `not_yet_tracked`, never "no change".
+- `scripts/sync-data.mjs` writes `programs.json` (sha256 in the manifest).
+
 ## [Unreleased] - lot C1 (2026-10-10, not deployed)
 
 - 4 sourced data tools: `compare_states` (2-5 states × 1 procedure, rank among 51, gap to the national mean), `us_dental_spending_stats` (MEPS 2023 + 2024 cross-sections and the paired 2023-2024 change), `canada_dental_cost_by_province` (CSV under DOI 10.5281/zenodo.20744781, 10 provinces, territories `no_source_at_this_level`), `cdcp_coverage_check` (income tier, coverage matrix, `estimated` co-pay; income + province only).

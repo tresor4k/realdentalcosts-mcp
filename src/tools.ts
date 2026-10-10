@@ -2,7 +2,7 @@
  * Shared tool registration for realdentalcosts-mcp, used by both the stdio
  * binary (src/index.ts) and the Streamable HTTP entry point (src/http.ts).
  *
- * createServer() registers 3 cost tools + 4 treatment-plan tools + 4 lot C1 tools (the modelled
+ * createServer() registers 3 cost tools + 4 treatment-plan tools + 4 lot C1 + 3 lot C2 tools (the modelled
  * out-of-pocket tool was removed). createServer({ appsSdk: true }) additionally
  * returns `structuredContent` and declares the MCP Apps widgets (price card, plan card;
  * versioned URIs in widget.ts, earlier URIs still served through ResourceTemplates).
@@ -27,6 +27,9 @@ import {
   usDentalSpendingStats,
   canadaDentalCostByProvince,
   cdcpCoverageCheck,
+  insuranceOutOfPocket,
+  medicareDentalCheck,
+  dentalProgramChanges,
   sourceNotes,
   CA_PROVINCE_CODES,
   CA_PROCEDURES,
@@ -194,7 +197,7 @@ export const DO_NOT =
   "Do not use for: diagnosis, treatment choice, a named insurer's plan price, dentist recommendations, countries other than the US and Canada.";
 const STAMP = " Observed market research with a source URL and period on every figure; not a quote, not medical advice.";
 const INSTRUCTIONS =
-  "Real Dental Costs gives observed US dental cost research: cash bands for 12 procedures by state, by city (implants), nationally and for 2 to 5 states side by side; national dental spending and out-of-pocket statistics (MEPS); what Medicaid paid per claim line for 61 CDT codes; each state's adult Medicaid dental rule and annual dollar cap; a line-by-line check of a treatment plan; and low-cost care routes (dental schools, health centers, shortage areas). For Canada: provincial fee amounts for 9 procedures and a Canadian Dental Care Plan coverage and co-pay check by income tier. Every figure carries its source URL and period, and a missing figure says no_source_at_this_level instead of being invented. Observed market research, not quotes, not medical advice. The tools do not cover diagnosis, treatment choice, a named insurer's plan, dentist recommendations or countries other than the US and Canada.";
+  "Real Dental Costs gives observed US dental cost research: cash bands for 12 procedures by state, by city (implants), nationally and for 2 to 5 states side by side; national dental spending and out-of-pocket statistics (MEPS); what Medicaid paid per claim line for 61 CDT codes; each state's adult Medicaid dental rule and annual dollar cap; a line-by-line check of a treatment plan; an out-of-pocket estimate built only from the user's own plan figures (private or Medicare Advantage); Original Medicare's dental exclusion with verbatim legal sources; dated Medicaid dental program changes (fee schedules, adult caps); and low-cost care routes (dental schools, health centers, shortage areas). For Canada: provincial fee amounts for 9 procedures and a Canadian Dental Care Plan coverage and co-pay check by income tier. Every figure carries its source URL and period, and a missing figure says no_source_at_this_level instead of being invented. Observed market research, not quotes, not medical advice. The tools do not cover diagnosis, treatment choice, a named insurer's plan, dentist recommendations or countries other than the US and Canada.";
 
 export function createServer({ appsSdk = false, utm = "mcp", uiDomain = true, publicOrigin }: CreateServerOptions = {}): McpServer {
 const origin = appsSdk ? checkedOrigin(publicOrigin) : DEFAULT_PUBLIC_ORIGIN;
@@ -698,6 +701,103 @@ server.registerTool(
   async ({ adjusted_family_net_income_cad, province, procedure, lang }) => {
     logCall("cdcp_coverage_check");
     return withNotes(cdcpCoverageCheck(adjusted_family_net_income_cad, province, procedure, lang));
+  },
+);
+
+// ---------------------------------------------------------------------------
+// 12-14. Lot C2: out-of-pocket from the user's own plan figures, Medicare dental rule, dated program changes
+// ---------------------------------------------------------------------------
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+server.registerTool(
+  "insurance_out_of_pocket",
+  {
+    title: "Out-of-pocket estimate from your own dental plan figures",
+    description:
+      'Use this when the user has a private dental plan or a Medicare Advantage plan with dental benefits, knows its figures (deductible left, annual maximum left, coinsurance per procedure or per class), and asks what they would still pay for dental work in a US state. Every plan parameter comes from the user; the tool assumes none and names no insurer. Returns, per line, the state cash band (observed or estimated badge) and an estimated split (deductible, plan share, user share) on the low, average and high of the band, with the formula written out; a line missing a parameter is not computed and says which one. Phrasings: "my plan has 50 dollars of deductible left and 1,200 of annual max, coinsurance 50% on crowns, what would a crown in Ohio leave me to pay", "estimate my share for a root canal and a crown with my Medicare Advantage dental benefit in Florida", "¿cuánto me tocaría pagar por un implante con mi seguro dental si me quedan 800 del máximo anual?", "¿cuál sería mi parte de una endodoncia con coaseguro del 20% en Texas?". ' +
+      DO_NOT +
+      STAMP,
+    inputSchema: {
+      state: stateEnum,
+      coverage: z.enum(["private", "medicare_advantage"]).describe("Coverage category only (no plan or insurer name)."),
+      lines: z
+        .array(
+          z.object({
+            procedure: procedureEnum,
+            qty: z.number().int().min(1).max(32).optional().describe("Quantity (default 1)."),
+            coinsurance_pct: z.number().min(0).max(100).optional().describe("Share the user pays after the deductible for this line, in percent, as read in the plan document."),
+            class: z.string().min(1).max(40).optional().describe("The user's own class label for this line (a key of coinsurance_by_class). The tool assigns no class."),
+            deductible_applies: z.boolean().optional().describe("false if the user's plan exempts this line from the deductible (default true)."),
+          }),
+        )
+        .min(1)
+        .max(10)
+        .describe("Lines in the order the user expects them to be billed (1-10)."),
+      deductible_remaining_usd: z.number().min(0).max(100000).optional().describe("Deductible still to meet this benefit year, in US dollars (0 if met). Required to compute."),
+      annual_max_remaining_usd: z.number().min(0).max(1000000).optional().describe("Annual maximum still available this benefit year, in US dollars. Required unless no_annual_maximum is true."),
+      no_annual_maximum: z.boolean().optional().describe("true only if the user's plan document states no annual maximum."),
+      coinsurance_by_class: z
+        .record(z.string().min(1).max(40), z.number().min(0).max(100))
+        .optional()
+        .describe("The user's coinsurance in percent per class label they provide, e.g. their plan's own class names."),
+      lang: langSchema,
+    },
+    annotations: ann("Out-of-pocket estimate from your own dental plan figures"),
+    ...planMeta("Applying your plan figures to the cash band…"),
+  },
+  async ({ state, coverage, lines, deductible_remaining_usd, annual_max_remaining_usd, no_annual_maximum, coinsurance_by_class, lang }) => {
+    logCall("insurance_out_of_pocket");
+    return withNotes(
+      insuranceOutOfPocket(state, lines, { coverage, deductible_remaining_usd, annual_max_remaining_usd, no_annual_maximum, coinsurance_by_class }, lang),
+    );
+  },
+);
+
+server.registerTool(
+  "medicare_dental_check",
+  {
+    title: "Does Medicare cover dental care?",
+    description:
+      'Use this when the user asks whether Medicare covers dental work (cleanings, fillings, extractions, dentures, implants) or what Original Medicare does for teeth. Returns the statutory exclusion of Original Medicare (Social Security Act 1862(a)(12), 42 CFR 411.15(i)) and the narrow exceptions, each as a verbatim quote with its source URL and retrieval date from medicare.gov, the eCFR and the US Code. Medicare Advantage plans for 2027 and their dental limits plan by plan are not yet tracked; for a plan whose figures the user knows, it points to insurance_out_of_pocket. Phrasings: "will Medicare pay for my dentures", "is a tooth extraction covered by Part B", "¿Medicare cubre los implantes dentales?", "¿Medicare paga la limpieza dental?". ' +
+      DO_NOT +
+      STAMP,
+    inputSchema: {
+      coverage: z
+        .enum(["original_medicare", "medicare_advantage", "not_sure"])
+        .default("not_sure")
+        .describe("The user's Medicare coverage category, if known (no plan name)."),
+      lang: langSchema,
+    },
+    annotations: ann("Does Medicare cover dental care?"),
+    ...planMeta("Reading the Medicare dental rule…"),
+  },
+  async ({ coverage, lang }) => {
+    logCall("medicare_dental_check");
+    return withNotes(medicareDentalCheck(coverage, lang));
+  },
+);
+
+server.registerTool(
+  "dental_program_changes",
+  {
+    title: "Dated changes to US dental programs",
+    description:
+      'Use this when the user asks what changed, or when a change took effect, in a US public dental program: Medicaid dental fee schedule updates and rate changes, or the start date of an adult Medicaid annual dental cap. Returns adopted changes with their effective date, verbatim quote or data file and source URL, filterable by state and by date range (YYYY-MM-DD); the Texas rate change of September 2026 lists its codes when state is TX. A state without dated tracking returns not_yet_tracked, never a claim that nothing changed. Phrasings: "what changed in Texas Medicaid dental reimbursement this fall", "since when does Colorado cap adult Medicaid dental benefits", "¿qué cambió en el Medicaid dental de Nevada en 2026?", "¿desde cuándo hay un límite anual dental en Medicaid de Massachusetts?". ' +
+      DO_NOT +
+      STAMP,
+    inputSchema: {
+      state: stateEnum.optional().describe("Optional 2-letter state code; all tracked states when omitted."),
+      from: isoDate.optional().describe("Optional start of the period (YYYY-MM-DD), on effective dates."),
+      to: isoDate.optional().describe("Optional end of the period (YYYY-MM-DD), on effective dates."),
+      lang: langSchema,
+    },
+    annotations: ann("Dated changes to US dental programs"),
+    ...planMeta("Reading dated program changes…"),
+  },
+  async ({ state, from, to, lang }) => {
+    if (from && to && from > to) return errorResult("from must be on or before to.");
+    logCall("dental_program_changes");
+    return withNotes(dentalProgramChanges(state, from, to, lang));
   },
 );
 

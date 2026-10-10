@@ -145,6 +145,35 @@ for (const c of caps) {
   if ((sc.annual_cap.cap_usd ?? null) !== (c.cap_kind === "not_verified" ? null : c.cap_usd))
     errors.push(`caps ${c.state}: tool cap ${sc.annual_cap.cap_usd} != table ${c.cap_usd}`);
 }
+// Lot C2: insurance_out_of_pocket (every state x every procedure, with and without a missing parameter),
+// medicare_dental_check (quotes <= 300 chars, sourced and dated), dental_program_changes (every state, periods).
+for (const st of STATES) {
+  const sc = await caCheck("insurance_out_of_pocket", {
+    state: st,
+    coverage: st < "M" ? "private" : "medicare_advantage",
+    deductible_remaining_usd: 50,
+    annual_max_remaining_usd: 1500,
+    coinsurance_by_class: { a: 20, b: 50 },
+    lines: PROCS.slice(0, 10).map((procedure, j) => ({ procedure, qty: 1 + (j % 2), ...(j % 3 === 0 ? { coinsurance_pct: 0 } : { class: j % 3 === 1 ? "a" : "b" }) })),
+  });
+  if (sc?.lines?.some((l) => l.status !== "ok")) errors.push(`insurance_out_of_pocket ${st}: a fully parameterised line was not computed`);
+  const miss = await caCheck("insurance_out_of_pocket", { state: st, coverage: "private", lines: PROCS.slice(10).map((procedure) => ({ procedure, class: "unknown" })), no_annual_maximum: true });
+  if (miss?.lines?.some((l) => l.status !== "parameter_missing" || l.estimate)) errors.push(`insurance_out_of_pocket ${st}: missing parameter computed anyway`);
+  const dpc = await caCheck("dental_program_changes", { state: st, lang: st === "TX" ? "es" : "en" });
+  if (dpc && !["ok", "not_yet_tracked", "none_tracked_in_period"].includes(dpc.status)) errors.push(`dental_program_changes ${st}: status ${dpc.status}`);
+  if (dpc && /no change/i.test(JSON.stringify(dpc))) errors.push(`dental_program_changes ${st}: says "no change"`);
+}
+for (const args of [{}, { from: "2026-01-01" }, { from: "2026-07-01", to: "2026-09-30" }, { to: "2020-01-01" }]) await caCheck("dental_program_changes", args);
+for (const coverage of ["original_medicare", "medicare_advantage", "not_sure"]) {
+  const sc = await caCheck("medicare_dental_check", { coverage });
+  (function scanQ(o) {
+    if (Array.isArray(o)) return o.forEach(scanQ);
+    if (!o || typeof o !== "object") return;
+    if (typeof o.quote === "string" && (o.quote.length > 300 || !o.source_url || !o.retrieved_at)) errors.push(`medicare_dental_check: quote without source/date or > 300 chars`);
+    Object.values(o).forEach(scanQ);
+  })(sc);
+  if (sc?.medicare_advantage?.status !== "not_yet_tracked") errors.push("medicare_dental_check: MA plans must be not_yet_tracked");
+}
 await client.close();
 
 console.log(`${calls} calls, ${numbers} numbers checked, ${nominal} nominal cells checked amount-free, largest response ${maxBytes} bytes`);

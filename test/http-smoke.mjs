@@ -81,7 +81,7 @@ try {
 
   const tools = await rpc("tools/list", {});
   const names = tools.result?.tools?.map((t) => t.name) ?? [];
-  assert(names.length === 11, `tools/list returns 11 tools (${names.join(", ")})`);
+  assert(names.length === 14, `tools/list returns 14 tools (${names.join(", ")})`);
   assert(!names.includes("out_of_pocket_estimate"), "modelled out-of-pocket tool is removed");
   const WIDGET = /^ui:\/\/realdentalcosts\/(price|plan)-card-v\d+\.html$/;
   assert(

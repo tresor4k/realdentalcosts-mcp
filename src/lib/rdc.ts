@@ -25,7 +25,7 @@ let cache: Record<string, Any> | null = null;
 function D(): Record<string, Any> {
   if (!cache) {
     cache = {};
-    for (const f of ["medicaid", "states", "procedures", "rules", "options", "chains", "meps", "canada", "manifest"])
+    for (const f of ["medicaid", "states", "procedures", "rules", "options", "chains", "meps", "canada", "programs", "manifest"])
       cache[f] = JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${f}.json`), "utf8"));
   }
   return cache;
@@ -876,6 +876,313 @@ export function cdcpCoverageCheck(income: number, prov: string, key: string | un
     coverage,
     estimate,
     links: { tiers: `${SITE}/ca/cdcp-eligibility-income-tiers/?${UTM}`, coverage: `${SITE}/ca/cdcp-coverage/?${UTM}` },
+    disclaimer: T.disclaimer[lang],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// lot C2: insurance_out_of_pocket, medicare_dental_check, dental_program_changes
+// ---------------------------------------------------------------------------
+export interface OopLine {
+  procedure: string;
+  qty?: number;
+  coinsurance_pct?: number;
+  class?: string;
+  deductible_applies?: boolean;
+}
+export interface OopParams {
+  coverage: "private" | "medicare_advantage";
+  deductible_remaining_usd?: number;
+  annual_max_remaining_usd?: number;
+  no_annual_maximum?: boolean;
+  coinsurance_by_class?: Record<string, number>;
+}
+
+const OOP_FORMULA = {
+  en: "Per line, in the order given: gross = band amount x qty; deductible applied = min(gross, deductible remaining) (0 when deductible_applies is false); plan pays = min((gross - deductible applied) x (1 - coinsurance % / 100), annual maximum remaining); you pay = gross - plan pays. Deductible and annual maximum remaining carry from line to line. Run three times: on the low, average and high of the cash band.",
+  es: "Por línea, en el orden dado: bruto = importe de la banda x cantidad; deducible aplicado = min(bruto, deducible restante) (0 si deductible_applies es false); el plan paga = min((bruto - deducible aplicado) x (1 - coaseguro % / 100), máximo anual restante); usted paga = bruto - lo que paga el plan. El deducible y el máximo anual restantes pasan de una línea a la siguiente. Se calcula tres veces: con el bajo, el promedio y el alto de la banda en efectivo.",
+};
+const OOP_NOTE: Record<string, { en: string; es: string }> = {
+  private: {
+    en: "Every plan parameter comes from the user. A plan computes its share on its own allowed amount, which Real Dental Costs does not publish: this estimate uses the cash band as the billed amount. Waiting periods, frequency limits, missing-tooth clauses and network rules are not modelled; read them in the plan document.",
+    es: "Cada parámetro del plan lo da el usuario. Un plan calcula su parte sobre su propio importe permitido, que Real Dental Costs no publica: esta estimación usa la banda en efectivo como importe facturado. Periodos de espera, límites de frecuencia, cláusulas de diente ausente y reglas de red no se modelan; léalos en el documento del plan.",
+  },
+  medicare_advantage: {
+    en: "Medicare Advantage dental benefits are set plan by plan; the parameters come from the user's own plan document (Evidence of Coverage). Real Dental Costs tracks no plan-level figure. A plan computes its share on its own allowed amount: this estimate uses the cash band as the billed amount. Original Medicare: see medicare_dental_check.",
+    es: "Los beneficios dentales de Medicare Advantage se fijan plan por plan; los parámetros vienen del documento del propio plan del usuario (Evidence of Coverage). Real Dental Costs no sigue ninguna cifra por plan. Un plan calcula su parte sobre su propio importe permitido: esta estimación usa la banda en efectivo como importe facturado. Medicare Original: vea medicare_dental_check.",
+  },
+};
+
+export function insuranceOutOfPocket(st: string, lines: OopLine[], p: OopParams, lang: Lang): Any {
+  const d = D();
+  const SCEN = ["low", "avg", "high"] as const;
+  const ded: Record<string, number> = {};
+  const max: Record<string, number | null> = {};
+  const sum: Record<string, { gross_usd: number; plan_pays_usd: number; you_pay_usd: number }> = {};
+  for (const s of SCEN) {
+    ded[s] = p.deductible_remaining_usd ?? 0;
+    max[s] = p.no_annual_maximum ? null : p.annual_max_remaining_usd ?? 0;
+    sum[s] = { gross_usd: 0, plan_pays_usd: 0, you_pay_usd: 0 };
+  }
+  const globalMissing = [
+    ...(p.deductible_remaining_usd == null ? ["deductible_remaining_usd"] : []),
+    ...(p.annual_max_remaining_usd == null && !p.no_annual_maximum ? ["annual_max_remaining_usd (or no_annual_maximum: true)"] : []),
+  ];
+  let computed = 0;
+  const out = lines.map((ln) => {
+    const qty = ln.qty ?? 1;
+    const fromClass = ln.class != null ? p.coinsurance_by_class?.[ln.class] : undefined;
+    const coins = ln.coinsurance_pct ?? fromClass;
+    const input = {
+      basis: "user_input",
+      procedure: ln.procedure,
+      qty,
+      ...(ln.coinsurance_pct != null ? { coinsurance_pct: ln.coinsurance_pct } : {}),
+      ...(ln.class != null ? { class: ln.class } : {}),
+      deductible_applies: ln.deductible_applies !== false,
+    };
+    if (!d.procedures[ln.procedure]) return { input, status: "not_covered", message: T.notCovered[lang] };
+    const raw = cashBand(ln.procedure, st, null, true);
+    const band = raw.status === "ok" ? raw : raw.next_level;
+    const { position: _p, ...bandOut } = band;
+    const cash_band = raw.status === "ok" ? bandOut : { ...raw, next_level: bandOut };
+    const missing = [
+      ...globalMissing,
+      ...(coins == null
+        ? [ln.class != null ? `coinsurance_by_class["${ln.class}"]` : "coinsurance_pct (or a class listed in coinsurance_by_class)"]
+        : []),
+    ];
+    if (missing.length)
+      return {
+        input,
+        status: "parameter_missing",
+        missing,
+        message:
+          lang === "es"
+            ? "Falta un parámetro del plan: esta línea no se calcula. Real Dental Costs no supone ningún deducible, máximo, clase ni porcentaje."
+            : "A plan parameter is missing: this line is not computed. Real Dental Costs assumes no deductible, maximum, class or percentage.",
+        cash_band,
+      };
+    computed++;
+    const scenarios: Any = {};
+    for (const s of SCEN) {
+      const gross = round2((band[`${s}_usd`] as number) * qty);
+      const dedApplied = ln.deductible_applies === false ? 0 : round2(Math.min(gross, ded[s]));
+      const share = round2((gross - dedApplied) * (1 - (coins as number) / 100));
+      const planPays = max[s] == null ? share : round2(Math.min(share, max[s] as number));
+      ded[s] = round2(ded[s] - dedApplied);
+      if (max[s] != null) max[s] = round2((max[s] as number) - planPays);
+      const youPay = round2(gross - planPays);
+      scenarios[`at_${s}`] = { gross_usd: gross, deductible_applied_usd: dedApplied, plan_pays_usd: planPays, you_pay_usd: youPay, ...(max[s] != null && planPays < share ? { annual_maximum_reached: true } : {}) };
+      sum[s].gross_usd = round2(sum[s].gross_usd + gross);
+      sum[s].plan_pays_usd = round2(sum[s].plan_pays_usd + planPays);
+      sum[s].you_pay_usd = round2(sum[s].you_pay_usd + youPay);
+    }
+    return {
+      input,
+      status: "ok",
+      label: band.label,
+      cash_band,
+      estimate: {
+        badge: "estimated",
+        coinsurance_pct_used: coins,
+        coinsurance_from: ln.coinsurance_pct != null ? "line" : `coinsurance_by_class["${ln.class}"]`,
+        ...scenarios,
+        source: band.source,
+        source_url: band.source_url,
+        period: band.period,
+      },
+    };
+  });
+  const genDay = day(d.states[st].generated_at);
+  return {
+    tool: "insurance_out_of_pocket",
+    state: { code: st, name: d.states[st].name },
+    input: {
+      basis: "user_input",
+      coverage: p.coverage,
+      ...(p.deductible_remaining_usd != null ? { deductible_remaining_usd: p.deductible_remaining_usd } : {}),
+      ...(p.annual_max_remaining_usd != null ? { annual_max_remaining_usd: p.annual_max_remaining_usd } : {}),
+      ...(p.no_annual_maximum ? { no_annual_maximum: true } : {}),
+      ...(p.coinsurance_by_class ? { coinsurance_by_class: p.coinsurance_by_class } : {}),
+    },
+    coverage: { category: p.coverage, note: OOP_NOTE[p.coverage][lang] },
+    formula: OOP_FORMULA[lang],
+    lines: out,
+    totals:
+      computed > 0
+        ? {
+            badge: "estimated",
+            lines_computed: computed,
+            lines_total: lines.length,
+            at_low: sum.low,
+            at_avg: sum.avg,
+            at_high: sum.high,
+            remaining_after: {
+              deductible_usd: { at_low: ded.low, at_avg: ded.avg, at_high: ded.high },
+              annual_maximum_usd: p.no_annual_maximum ? "no annual maximum (user input)" : { at_low: max.low, at_avg: max.avg, at_high: max.high },
+            },
+            note: "Totals of the computed lines only; every band comes from the Real Dental Costs API v1 state file.",
+            source_url: apiState(st),
+            period: `API v1 state file generated ${genDay}`,
+          }
+        : { status: "not_computed", reason: "No line could be computed: see lines[].missing." },
+    links: { insurance: `${SITE}/en/dental-insurance/?${UTM}`, methodology: `${SITE}/en/methodology/?${UTM}` },
+    disclaimer: T.disclaimer[lang],
+  };
+}
+
+export function medicareDentalCheck(coverage: string, lang: Lang): Any {
+  const m = D().programs.medicare;
+  const q = (id: string) => {
+    const r = m.quotes.find((x: Any) => x.id === id);
+    return { quote: r.quote, source: r.source_title, source_url: r.source_url, retrieved_at: r.retrieved_at, as_of: day(r.retrieved_at) };
+  };
+  const es = lang === "es";
+  return {
+    tool: "medicare_dental_check",
+    input: { basis: "user_input", coverage },
+    original_medicare: {
+      rule: "excluded_with_narrow_exceptions",
+      summary: es
+        ? "Medicare Original (Partes A y B) excluye por ley la atención dental de rutina (cuidado, tratamiento, empastes, extracción o reemplazo de dientes). Excepciones limitadas: ciertos servicios dentales con hospitalización o ligados a un tratamiento médico cubierto. Citas literales abajo."
+        : "Original Medicare (Parts A and B) excludes routine dental care by statute (care, treatment, filling, removal or replacement of teeth). Narrow exceptions: some dental services with a hospital admission or linked to a covered medical treatment. Verbatim quotes below.",
+      statute: q("statute"),
+      regulation: q("regulation"),
+      medicare_gov: [q("original_medicare_rule_1"), q("original_medicare_rule_2"), q("original_medicare_rule_3")],
+    },
+    medicare_advantage: {
+      status: "not_yet_tracked",
+      scope: "2027 Medicare Advantage plans, their dental benefits and their dollar limits plan by plan",
+      reason: es
+        ? "Cada plan publica sus beneficios dentales; Real Dental Costs aún no los sigue. Ninguna cifra de plan se da aquí."
+        : "Each plan publishes its own dental benefits; Real Dental Costs does not track them yet. No plan figure is given here.",
+      enrollment_period: q("enrollment_period"),
+      next_step: {
+        tool: "insurance_out_of_pocket",
+        arguments: { coverage: "medicare_advantage" },
+        note: es
+          ? "Si el usuario conoce el deducible, el máximo anual y el coaseguro de su plan (Evidence of Coverage), insurance_out_of_pocket estima su gasto de bolsillo sobre la banda en efectivo del estado."
+          : "If the user knows the plan's deductible, annual maximum and coinsurance (Evidence of Coverage), insurance_out_of_pocket estimates the out-of-pocket amount on the state cash band.",
+      },
+    },
+    other_tools: {
+      cash_cost: "dental_cost_by_state",
+      lower_cost_care: "low_cost_dental_options",
+      adult_medicaid_rule: "medicaid_adult_dental_rules",
+    },
+    links: { medicare_advantage: `${SITE}/en/medicare-advantage-dental-coverage/?${UTM}`, methodology: `${SITE}/en/methodology/?${UTM}` },
+    disclaimer: T.disclaimer[lang],
+  };
+}
+
+const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+/** Effective date stated in a cap's period text (verbatim from the caps table), or null. */
+function capEffectiveDate(period: string): string | null {
+  const iso = (y: number, mo: number, dd: number) => `${y}-${String(mo).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+  const m = period.match(/(?:effective|on and after) (\w+) (\d{1,2}), (\d{4})/i);
+  if (m && MONTHS.includes(m[1].toLowerCase())) return iso(Number(m[3]), MONTHS.indexOf(m[1].toLowerCase()) + 1, Number(m[2]));
+  const n = period.match(/(\d{1,2})\/(\d{1,2})\/(\d{2}) and on/);
+  return n ? iso(2000 + Number(n[3]), Number(n[1]), Number(n[2])) : null;
+}
+const CHANGE_KIND = {
+  rate_change: { en: "Medicaid dental fee schedule: rate change", es: "Baremo dental de Medicaid: cambio de tarifas" },
+  schedule: { en: "Medicaid dental fee schedule in force from this date", es: "Baremo dental de Medicaid vigente desde esta fecha" },
+  cap: { en: "Adult Medicaid annual dental cap: effective date", es: "Tope dental anual de Medicaid adulto: fecha de efecto" },
+};
+
+export function dentalProgramChanges(st: string | undefined, from: string | undefined, to: string | undefined, lang: Lang): Any {
+  const d = D();
+  const KIND_ID = { rate_change: "medicaid_fee_schedule_rate_change", schedule: "medicaid_fee_schedule_effective", cap: "adult_dental_cap_effective" } as const;
+  const k = (key: keyof typeof CHANGE_KIND) => ({ kind: KIND_ID[key] });
+  const events: Any[] = [];
+  const tx = d.programs.tx_rate_change;
+  {
+    const pcts = tx.rows.map((r: Any) => r.pct_change).sort((a: number, b: number) => a - b);
+    events.push({
+      state: tx.code,
+      ...k("rate_change"),
+      effective_date: tx.effective_date,
+      previous_effective_date: tx.previous_effective_date,
+      published_at: tx.published_at,
+      program: tx.program,
+      hearing: tx.hearing,
+      codes_changed: tx.rows.length,
+      pct_change_range: { min: pcts[0], max: pcts[pcts.length - 1], unit: "percent (0.55 = +0.55 %)", badge: "derived" },
+      licence_note: tx.licence_note,
+      source: "Texas Medicaid & Healthcare Partnership (TMHP), rate change notice",
+      source_url: tx.news_url,
+      data_file_url: tx.file_url,
+      ...(st === tx.code
+        ? {
+            rows: tx.rows.map((r: Any) => {
+              const ok = /^(\d{1,2})-(\d{1,2})$/.exec(r.age_range);
+              return ok && Number(ok[2]) <= 20
+                ? r
+                : { ...r, age_range: null, age_range_as_extracted: r.age_range, age_range_status: "not_parsed_reliably_from_source_file" };
+            }),
+          }
+        : { rows: "pass state TX to list the codes" }),
+    });
+  }
+  for (const [code, r] of Object.entries(d.rules) as [string, Any][]) {
+    if (r.schedule?.effective_date)
+      events.push({
+        state: code,
+        ...k("schedule"),
+        effective_date: r.schedule.effective_date,
+        schedule_scope: scheduleScope(code),
+        source_url: r.schedule.source_url,
+      });
+    const eff = r.cap?.period ? capEffectiveDate(r.cap.period) : null;
+    if (eff && r.cap.cap_usd != null)
+      events.push({
+        state: code,
+        ...k("cap"),
+        effective_date: eff,
+        cap_usd: r.cap.cap_usd,
+        cap_kind: r.cap.cap_kind,
+        period: r.cap.period,
+        ...(st ? { quote: r.cap.quote, source: r.cap.source_title } : {}),
+        source_url: r.cap.source_url,
+        retrieved_at: r.cap.retrieved_at,
+      });
+  }
+  const inRange = (e: Any) => (!from || e.effective_date >= from) && (!to || e.effective_date <= to);
+  const tracked = new Set(events.map((e) => e.state));
+  const list = events
+    .filter((e) => (!st || e.state === st) && inRange(e))
+    .sort((a, b) => (a.effective_date < b.effective_date ? 1 : a.effective_date > b.effective_date ? -1 : a.state.localeCompare(b.state)));
+  const allStates = Object.keys(d.states).sort();
+  const es = lang === "es";
+  const status = st && !tracked.has(st) ? "not_yet_tracked" : list.length ? "ok" : "none_tracked_in_period";
+  return {
+    tool: "dental_program_changes",
+    input: { basis: "user_input", ...(st ? { state: st } : {}), ...(from ? { from } : {}), ...(to ? { to } : {}) },
+    ...(st ? { state: { code: st, name: d.states[st].name } } : {}),
+    status,
+    ...(status === "not_yet_tracked"
+      ? { message: es ? "Real Dental Costs aún no sigue cambios fechados para este estado. Esto no significa que no haya habido cambios." : "Real Dental Costs does not track dated changes for this state yet. This does not mean nothing changed." }
+      : status === "none_tracked_in_period"
+        ? { message: es ? "Ningún cambio seguido cae en este periodo. Esto no significa que no haya habido cambios." : "No tracked change falls in this period. This does not mean nothing changed." }
+        : {}),
+    tracked: es
+      ? "Cambios adoptados y fechados: cambio de tarifas del baremo de Texas (01/09/2026), fecha de vigencia de los baremos oficiales de Medicaid, fecha de efecto de los topes dentales anuales de adultos cuando la fuente la indica."
+      : "Adopted, dated changes: Texas fee schedule rate change (2026-09-01), effective date of official Medicaid fee schedules, effective date of adult annual dental caps when the source states one.",
+    not_yet_tracked: "Other program changes (covered services, eligibility, managed-care contracts, proposed rules), Medicare Advantage plan changes, private plans.",
+    kinds: Object.fromEntries(
+      (Object.keys(CHANGE_KIND) as (keyof typeof CHANGE_KIND)[]).map((key) => [
+        KIND_ID[key],
+        key === "schedule"
+          ? { label: CHANGE_KIND[key][lang], note: "Effective date printed on the official schedule; Real Dental Costs publishes no before/after comparison for it." }
+          : key === "cap"
+            ? { label: CHANGE_KIND[key][lang], note: "Date stated in the cap source (period field, verbatim); the verbatim quote is listed when a state is given." }
+            : { label: CHANGE_KIND[key][lang] },
+      ]),
+    ),
+    changes: list,
+    ...(st ? {} : { states_not_yet_tracked: allStates.filter((s) => !tracked.has(s)) }),
+    links: { methodology: `${SITE}/en/methodology/?${UTM}` },
     disclaimer: T.disclaimer[lang],
   };
 }
