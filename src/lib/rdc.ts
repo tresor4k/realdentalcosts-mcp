@@ -30,7 +30,8 @@ function D(): Record<string, Any> {
 }
 
 const SITE = "https://realdentalcosts.com";
-export const UTM = "utm_source=chatgpt-app&utm_medium=mcp";
+// utm_source=mcp (stdio/npm) is rewritten per host by tools.ts: chatgpt on /mcp, claude on /claude.
+export const UTM = "utm_source=mcp&utm_medium=mcp";
 const ACC_CSV = `${SITE}/data/us-dental-insurance-acceptance-by-state-2026.csv`;
 const ATLAS_CSV = `${SITE}/data/us-dental-deserts-atlas-2026.csv`;
 const FREE_CSV = `${SITE}/data/us-free-dental-programs-by-state-2026.csv`;
@@ -181,6 +182,13 @@ function medicaidPaid(code: string, st: string, lang: Lang, withSeries = false, 
   };
 }
 
+// Upstream only ever flags "children"; any other schedule has an unknown age scope (E-101: the TX schedule read for
+// D2740 covers children). An unknown scope is reported as not_verified, and an official fee is context only: it is
+// never the reference of a quote's position (position() uses the cash band alone).
+function scheduleScope(st: string): "children_only" | "not_verified" {
+  return D().rules[st]?.schedule?.schedule_scope === "children_only" ? "children_only" : "not_verified";
+}
+
 function feeSchedule(code: string, st: string, lang: Lang, compact = false): Any {
   const f = D().medicaid.codes[code].states[st]?.official_fee;
   if (!f) {
@@ -199,7 +207,8 @@ function feeSchedule(code: string, st: string, lang: Lang, compact = false): Any
     effective_date: f.effective_date ?? null,
     // Some schedules state no effective date: the only date the source gives is the ADA index listing.
     ...(f.effective_date ? {} : { period: `no effective date in the source; listed in the ADA Medicaid fee-schedule index as of ${f.ada_index_as_of}`, badge: "undated_schedule" }),
-    schedule_scope: D().rules[st]?.schedule?.schedule_scope ?? "not_flagged_children_only",
+    schedule_scope: scheduleScope(st),
+    reference_use: "context_only",
     ...(f.column_note && !compact ? { column_note: f.column_note } : {}),
     source_url: f.source_url,
     ...(compact ? {} : { api_url: apiMedicaid(code) }),
@@ -353,7 +362,7 @@ export function medicaidAdultDentalRules(st: string, lang: Lang): Any {
           status: "ok",
           source_url: r.schedule.source_url,
           effective_date: r.schedule.effective_date,
-          schedule_scope: r.schedule.schedule_scope,
+          schedule_scope: scheduleScope(st),
           ...(r.schedule.column_note ? { column_note: r.schedule.column_note } : {}),
         }
       : { status: "no_source_at_this_level", geo: "state" },

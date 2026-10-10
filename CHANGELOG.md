@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased] - remote server, lot A (2026-10-10, not deployed)
+
+- Remote endpoints `/mcp` (ChatGPT and other clients, widgets with `_meta.ui.domain` = `https://mcp.realdentalcosts.com`) and `/claude` (no `ui.domain`); links carry `utm_source=chatgpt`, `claude`, or `mcp` (stdio).
+- `normalizeHeaders`: `Accept: application/json` alone and unknown `MCP-Protocol-Version` headers are served (200).
+- Every tool: `annotations.title` + `readOnlyHint`/`destructiveHint`/`openWorldHint`; descriptions "Use this when…" with 2 EN + 2 ES phrasings and the "Do not use for" scope; server instructions. Lint: `test/descriptions.test.mjs`; golden prompts: `prompts/golden_prompts.json`.
+- Widgets in MCP Apps format with versioned URIs (`ui://realdentalcosts/*-card-v2.html`); earlier URIs (`ui://widget/*.html`, `-vN`) still served through ResourceTemplates.
+- Official Medicaid fee schedules: `schedule_scope` is `children_only` or `not_verified` (unknown scope), `reference_use: "context_only"`; never the reference of a quote's position.
+- `vercel.json` (framework null, `public/` output, `X-Robots-Tag: noindex`) and `public/` (index, privacy, terms, support, docs, `.well-known/openai-apps-challenge` placeholder).
+
 ## [0.2.0] - 2026-07-30
 
 ### Fixed (data integrity — important)

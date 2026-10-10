@@ -1,34 +1,67 @@
 /**
- * Streamable HTTP entry point (stateless, JSON responses) for remote clients:
- * ChatGPT Apps SDK / connectors and Claude custom connectors.
+ * Streamable HTTP entry point (stateless, JSON responses) for remote clients.
  *
- * - handleMcp(req, res, parsedBody?) is the reusable handler (api/mcp.ts).
- * - handlePrivacy(req, res) serves the static privacy page (GET /privacy).
- * - `node dist/http.js` starts a local server on PORT (default 8787) at /mcp and /privacy.
+ * - /mcp (ChatGPT plugins, Perplexity and other clients): widgets with `_meta.ui.domain`, links utm_source=chatgpt.
+ * - /claude (Claude connectors): widgets without `_meta.ui.domain`, links utm_source=claude.
+ * - handleMcp(req, res, parsedBody?, variant?) is the reusable handler (api/mcp.ts on Vercel).
+ * - `node dist/http.js` starts a local server on PORT (default 8787): /mcp, /claude and the static pages of public/.
  */
+import fs from "node:fs";
 import http from "node:http";
-import { pathToFileURL } from "node:url";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { LATEST_PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS } from "@modelcontextprotocol/sdk/types.js";
 
 import { createServer } from "./tools.js";
 import { loadCitiesData } from "./lib/cities.js";
+
+export type Variant = "default" | "claude";
 
 function jsonRpcError(res: http.ServerResponse, status: number, message: string): void {
   res.writeHead(status, { "content-type": "application/json", ...(status === 405 ? { allow: "POST" } : {}) });
   res.end(JSON.stringify({ jsonrpc: "2.0", error: { code: -32000, message }, id: null }));
 }
 
+// The SDK transport reads the raw headers too: set both views of a header.
+function setHeader(req: http.IncomingMessage, name: string, value: string): void {
+  req.headers[name] = value;
+  const raw = req.rawHeaders;
+  const kept: string[] = [];
+  for (let i = 0; i < raw.length; i += 2) if (raw[i].toLowerCase() !== name) kept.push(raw[i], raw[i + 1]);
+  req.rawHeaders = [...kept, name, value];
+}
+
+/**
+ * Hosts and scanners do not all send the headers the SDK transport checks strictly (OpenAI's plugin scan got 406
+ * for an Accept of application/json alone and 400 for a newer MCP-Protocol-Version). This endpoint is stateless and
+ * answers in JSON, so any client that posts JSON-RPC is served; an unknown protocol version is served as the latest
+ * this server speaks (the version is negotiated in initialize anyway).
+ */
+export function normalizeHeaders(req: http.IncomingMessage): void {
+  const accept = String(req.headers.accept ?? "");
+  if (!accept.includes("application/json") || !accept.includes("text/event-stream"))
+    setHeader(req, "accept", "application/json, text/event-stream");
+  const version = req.headers["mcp-protocol-version"];
+  if (typeof version === "string" && !SUPPORTED_PROTOCOL_VERSIONS.includes(version))
+    setHeader(req, "mcp-protocol-version", LATEST_PROTOCOL_VERSION);
+}
+
 export async function handleMcp(
   req: http.IncomingMessage,
   res: http.ServerResponse,
   parsedBody?: unknown,
+  variant: Variant = "default",
 ): Promise<void> {
   if (req.method !== "POST") {
     // Stateless server: no SSE stream (GET) and no session to delete (DELETE).
     jsonRpcError(res, 405, "Method not allowed: this stateless MCP endpoint only accepts POST.");
     return;
   }
-  const server = createServer({ appsSdk: true });
+  normalizeHeaders(req);
+  const server = createServer(
+    variant === "claude" ? { appsSdk: true, utm: "claude", uiDomain: false } : { appsSdk: true, utm: "chatgpt" },
+  );
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
@@ -47,36 +80,20 @@ export async function handleMcp(
 
 export default handleMcp;
 
-export const PRIVACY_HTML = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Privacy — Real Dental Costs app (MCP)</title>
-<style>body{max-width:720px;margin:32px auto;padding:0 16px;font:15px/1.6 system-ui,sans-serif}h1{font-size:22px}</style>
-</head><body>
-<h1>Privacy — Real Dental Costs app and connector</h1>
-<p>Last updated: 2026-10-09. Operator: Real Dental Costs (https://realdentalcosts.com).</p>
-<h2>What the app receives</h2>
-<p>Only the arguments of each tool call: CDT procedure codes or procedure names, quantities, quoted prices in USD,
-a US state code, an optional county name, a coverage category (none, adult Medicaid, private, Medicare Advantage,
-discount plan) and a language (en/es). The app never asks for a name, age, date of birth, ZIP code, address,
-insurer or plan name, member ID, phone number or email.</p>
-<h2>What is stored</h2>
-<p>Nothing. Requests are processed in memory to look up published figures and the response is returned; tool
-arguments, quoted prices and responses are not saved, sold or shared. There are no cookies, accounts or trackers.</p>
-<h2>Usage log</h2>
-<p>An aggregate usage log records only the tool name and the UTC day of each call. It contains no tool arguments,
-no IP address, no user agent and no other personal data.</p>
-<h2>Data shown</h2>
-<p>Published market-research figures (cash price bands, Medicaid paid per claim line from T-MSIS, official fee
-schedules, program rules), each with its source URL and period. Pricing research, not medical, dental, coding or
-insurance advice.</p>
-<h2>Contact</h2>
-<p>research@realdentalcosts.com</p>
-</body></html>
-`;
+const PUBLIC_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
+const TYPES: Record<string, string> = { ".html": "text/html; charset=utf-8", "": "text/plain; charset=utf-8" };
 
-export function handlePrivacy(_req: http.IncomingMessage, res: http.ServerResponse): void {
-  res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=3600" });
-  res.end(PRIVACY_HTML);
+/** Local stand-in for Vercel's static output (cleanUrls): /privacy -> public/privacy.html. */
+function serveStatic(urlPath: string, res: http.ServerResponse): boolean {
+  const rel = urlPath === "/" ? "index.html" : urlPath.slice(1);
+  for (const candidate of [rel, `${rel}.html`]) {
+    const file = path.join(PUBLIC_DIR, candidate);
+    if (!file.startsWith(PUBLIC_DIR) || !fs.existsSync(file) || !fs.statSync(file).isFile()) continue;
+    res.writeHead(200, { "content-type": TYPES[path.extname(file)] ?? "application/octet-stream", "x-robots-tag": "noindex, nofollow" });
+    res.end(fs.readFileSync(file));
+    return true;
+  }
+  return false;
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
@@ -85,16 +102,13 @@ if (isMain) {
   const port = Number(process.env.PORT ?? 8787);
   http
     .createServer((req, res) => {
-      const path = (req.url ?? "/").split("?")[0];
-      if (path === "/privacy" && req.method === "GET") {
-        handlePrivacy(req, res);
+      const urlPath = (req.url ?? "/").split("?")[0];
+      if (urlPath === "/mcp" || urlPath === "/claude") {
+        void handleMcp(req, res, undefined, urlPath === "/claude" ? "claude" : "default");
         return;
       }
-      if (path !== "/mcp") {
-        jsonRpcError(res, 404, "Not found: MCP endpoint is /mcp");
-        return;
-      }
-      void handleMcp(req, res);
+      if (req.method === "GET" && serveStatic(urlPath, res)) return;
+      jsonRpcError(res, 404, "Not found: the MCP endpoint is /mcp (/claude for Claude)");
     })
     .listen(port, "127.0.0.1", () => {
       console.log(`realdentalcosts-mcp HTTP listening on http://127.0.0.1:${port}/mcp`);

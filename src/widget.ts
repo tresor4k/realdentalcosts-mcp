@@ -1,10 +1,38 @@
 /**
- * ChatGPT Apps SDK widget (self-contained: no CDN, no network calls).
- * Reads `window.openai.toolOutput.card` (the structuredContent built in
- * tools.ts) and renders the low / average / high price range.
+ * Widgets (self-contained: no CDN, no network calls), MCP Apps format: they read the tool result from the
+ * MCP Apps bridge (ui/initialize, ui/notifications/tool-result, ui/open-link: Claude, ChatGPT) or from the
+ * window.openai aliases (ChatGPT). The price card renders `structuredContent.card` (built in tools.ts).
+ *
+ * A host caches a template by its URI: change the -vN suffix whenever a template changes. Earlier URIs
+ * (ui://widget/*.html of lot 1, earlier -vN) stay served by the ResourceTemplates registered in tools.ts.
  */
-export const WIDGET_URI = "ui://widget/price-card.html";
-export const WIDGET_MIME = "text/html+skybridge";
+export const WIDGET_URI = "ui://realdentalcosts/price-card-v2.html";
+export const WIDGET_MIME = "text/html;profile=mcp-app";
+
+// MCP Apps bridge, shared by both widgets: stores the tool result in window.__rdcData and fires "rdc:data";
+// window.__rdcOpen(href) opens a link through the host. No network call.
+const BRIDGE = `(function () {
+  var nid = 0, initId = 0, ready = false;
+  function post(m) { try { window.parent.postMessage(m, "*"); } catch (e) {} }
+  function size() { if (ready) post({ jsonrpc: "2.0", method: "ui/notifications/size-changed", params: { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight } }); }
+  window.__rdcOpen = function (href) {
+    if (window.openai && typeof window.openai.openExternal === "function") window.openai.openExternal({ href: href });
+    else post({ jsonrpc: "2.0", id: ++nid, method: "ui/open-link", params: { url: href } });
+  };
+  window.addEventListener("message", function (e) {
+    if (e.source !== window.parent) return;
+    var m = e.data;
+    if (!m || m.jsonrpc !== "2.0") return;
+    if (m.id === initId && m.result) { ready = true; post({ jsonrpc: "2.0", method: "ui/notifications/initialized", params: {} }); size(); }
+    else if (m.method === "ui/notifications/tool-result" && m.params && m.params.structuredContent) {
+      window.__rdcData = m.params.structuredContent;
+      window.dispatchEvent(new Event("rdc:data"));
+      setTimeout(size, 0);
+    } else if (m.method === "ui/resource-teardown" && m.id != null) post({ jsonrpc: "2.0", id: m.id, result: {} });
+  });
+  initId = ++nid;
+  post({ jsonrpc: "2.0", id: initId, method: "ui/initialize", params: { protocolVersion: "2026-01-26", appInfo: { name: "realdentalcosts-widget", version: "2" }, appCapabilities: {} } });
+})();`;
 
 export const WIDGET_HTML = `<!doctype html>
 <html lang="en">
@@ -31,6 +59,7 @@ export const WIDGET_HTML = `<!doctype html>
 <body>
 <div id="root" class="empty">Loading dental prices…</div>
 <script>
+${BRIDGE}
 (function () {
   var fmt = function (n) {
     return typeof n === "number" ? "$" + n.toLocaleString("en-US") : "—";
@@ -42,7 +71,7 @@ export const WIDGET_HTML = `<!doctype html>
     return e;
   }
   function render() {
-    var out = window.openai && window.openai.toolOutput;
+    var out = (window.openai && window.openai.toolOutput) || window.__rdcData;
     var c = out && out.card;
     var root = document.getElementById("root");
     if (!c) return;
@@ -67,16 +96,15 @@ export const WIDGET_HTML = `<!doctype html>
       a.target = "_blank";
       a.rel = "noopener";
       a.addEventListener("click", function (ev) {
-        if (window.openai && typeof window.openai.openExternal === "function") {
-          ev.preventDefault();
-          window.openai.openExternal({ href: c.url });
-        }
+        ev.preventDefault();
+        window.__rdcOpen(c.url);
       });
       p.appendChild(a);
       root.appendChild(p);
     }
   }
   window.addEventListener("openai:set_globals", render);
+  window.addEventListener("rdc:data", render);
   render();
 })();
 </script>
@@ -89,7 +117,7 @@ export const WIDGET_HTML = `<!doctype html>
  * medicaid_adult_dental_rules, medicaid_paid_by_code, low_cost_dental_options).
  * Self-contained, textContent only (no innerHTML from data), no network calls.
  */
-export const PLAN_WIDGET_URI = "ui://widget/plan-card.html";
+export const PLAN_WIDGET_URI = "ui://realdentalcosts/plan-card-v2.html";
 
 export const PLAN_WIDGET_HTML = `<!doctype html>
 <html lang="en">
@@ -121,6 +149,7 @@ export const PLAN_WIDGET_HTML = `<!doctype html>
 <body>
 <div id="root" class="card">Loading…</div>
 <script>
+${BRIDGE}
 (function () {
   function usd(n) { return typeof n === "number" ? "$" + n.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—"; }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -128,7 +157,7 @@ export const PLAN_WIDGET_HTML = `<!doctype html>
   function link(href, text) {
     var a = el("a", null, text); a.href = href; a.target = "_blank"; a.rel = "noopener";
     a.addEventListener("click", function (ev) {
-      if (window.openai && typeof window.openai.openExternal === "function") { ev.preventDefault(); window.openai.openExternal({ href: href }); }
+      ev.preventDefault(); window.__rdcOpen(href);
     });
     return a;
   }
@@ -155,6 +184,7 @@ export const PLAN_WIDGET_HTML = `<!doctype html>
     if (!f || f.status !== "ok") { td.appendChild(el("span", "warn", f && f.status === "code_required" ? "needs code" : "no source")); return td; }
     td.appendChild(document.createTextNode(usd(f.fee_usd) + " · " + f.effective_date));
     if (f.schedule_scope === "children_only") td.appendChild(badge("children only"));
+    else if (f.schedule_scope === "not_verified") td.appendChild(badge("age scope not verified"));
     return td;
   }
   function verdict(l) {
@@ -245,7 +275,7 @@ export const PLAN_WIDGET_HTML = `<!doctype html>
     return out.join("\\n");
   }
   function render() {
-    var d = window.openai && window.openai.toolOutput;
+    var d = (window.openai && window.openai.toolOutput) || window.__rdcData;
     if (!d || !d.tool) return;
     var root = document.getElementById("root");
     root.textContent = "";
@@ -273,6 +303,7 @@ export const PLAN_WIDGET_HTML = `<!doctype html>
     root.appendChild(btn);
   }
   window.addEventListener("openai:set_globals", render);
+  window.addEventListener("rdc:data", render);
   render();
 })();
 </script>
