@@ -279,9 +279,9 @@ ${BRIDGE}
     if (!d || !d.tool) return;
     var root = document.getElementById("root");
     root.textContent = "";
-    var titles = { benchmark_treatment_plan: "Treatment plan check", medicaid_adult_dental_rules: "Adult Medicaid dental rule", medicaid_paid_by_code: "Medicaid paid " + (d.code || ""), low_cost_dental_options: "Lower-cost dental options" };
+    var titles = { benchmark_treatment_plan: "Treatment plan check", medicaid_adult_dental_rules: "Adult Medicaid dental rule", medicaid_paid_by_code: "Medicaid paid " + (d.code || ""), low_cost_dental_options: "Lower-cost dental options", compare_states: "States side by side", us_dental_spending_stats: "US dental spending (MEPS)", canada_dental_cost_by_province: "Dental costs by province", cdcp_coverage_check: "Canadian Dental Care Plan check" };
     root.appendChild(el("h2", null, titles[d.tool] || "Real Dental Costs"));
-    root.appendChild(el("p", "sub", (d.state ? d.state.name : "United States") + (d.label ? " · " + d.label : "")));
+    root.appendChild(el("p", "sub", (d.state ? d.state.name : d.province ? d.province.name + ", Canada" : "United States") + (d.label ? " · " + d.label : "")));
     if (d.tool === "benchmark_treatment_plan") plan(d, root);
     else if (d.tool === "medicaid_adult_dental_rules") rule(d, root);
     else if (d.tool === "medicaid_paid_by_code") paid(d, root);

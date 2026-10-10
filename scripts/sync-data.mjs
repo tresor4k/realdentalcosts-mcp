@@ -5,7 +5,7 @@
  * so every number served by the app equals the open API v1.
  *
  * Usage: node scripts/sync-data.mjs [siteDir]   (default ../dentist/web, or RDC_SITE_DIR)
- * Writes src/data/rdc/{medicaid,states,procedures,rules,options,chains}.json and
+ * Writes src/data/rdc/{medicaid,states,procedures,rules,options,chains,meps,canada}.json and
  * manifest.json (sha256 of every input and output file + sync date).
  */
 import fs from "node:fs";
@@ -233,6 +233,129 @@ const chainsOut = {
 };
 
 // ---------------------------------------------------------------------------
+// MEPS (API v1 /meps/*.json): annual cross-sections + paired 2023-2024 change.
+// The cross-sectional delta is NOT copied: the source itself says it is not confirmed
+// by the paired Panel 28 estimates (no national trend to infer).
+// ---------------------------------------------------------------------------
+const mepsNat = json("public/api/v1/meps/national.json");
+const mepsLong = json("public/api/v1/meps/longitudinal.json");
+const mepsFile = (f) => pick(f, ["puf", "name", "released", "url"]);
+const meps = {
+  national: {
+    endpoint: mepsNat.endpoint,
+    title: mepsNat.title,
+    source: mepsNat.provenance.source,
+    computed_at: mepsNat.provenance.computed_at,
+    generated_at: mepsNat.meta.generated_at,
+    files: mepsNat.provenance.files.map(mepsFile),
+    caveats: mepsNat.caveats,
+    years: Object.fromEntries(
+      Object.entries(mepsNat.data).filter(([k]) => /^y\d{4}$/.test(k)).map(([k, v]) => [k.slice(1), v]),
+    ),
+  },
+  longitudinal: {
+    endpoint: mepsLong.endpoint,
+    title: mepsLong.title,
+    source: mepsLong.provenance.source,
+    generated_at: mepsLong.meta.generated_at,
+    files: mepsLong.provenance.files.map(mepsFile),
+    caveats: mepsLong.caveats,
+    paired_change: Object.fromEntries(
+      Object.entries(mepsLong.data.paired_change_2024_minus_2023).map(([k, v]) => [k, pick(v, ["value", "ci95", "significant_at_95pct"])]),
+    ),
+    reading: mepsLong.data.comparison_with_cross_sectional?.reading ?? null,
+  },
+};
+for (const y of ["2023", "2024"]) if (!meps.national.years[y]) issues.push(`meps: no ${y} cross-section`);
+
+// ---------------------------------------------------------------------------
+// Canada: provincial cost index (CSV under DOI 10.5281/zenodo.20744781), CDCP coverage
+// matrix (CSV) and CDCP income tiers (lib/canada-data.ts CDCP_TIERS).
+// Rows hit by an open defect in audit/qualite/ISSUES.md are withheld (no value copied).
+// ---------------------------------------------------------------------------
+const CA_CSV = "public/data/canada-dental-cost-index-by-province-2026.csv";
+const CDCP_CSV = "public/data/cdcp-coverage-matrix-2026.csv";
+const UNDER_REVIEW = {
+  "BC/recall_exam": { issue: "E-081", defect_amount: 62.6, note: "The figure published for this row is the BCDA code for a specific examination, not the recall examination code; correction scheduled with dataset v1.1." },
+  "ON/recall_exam": { issue: "E-086", defect_amount: 139, note: "The published range mixes a complete-examination fee and a new-patient-exam fee; no public relay gives the Ontario recall examination code." },
+  "NB/recall_exam": { issue: "E-087", defect_amount: 82, note: "The published figure is a 2025 examination code; the NBDS 2026 guide publishes a different recall examination amount. Correction scheduled with dataset v1.1." },
+  "ON/filling_1surface_composite": { issue: "E-094", defect_amount: 342, note: "The published figure is the midpoint of a 1-to-5-surface range withdrawn by the source manifest on 2026-08-03; correction scheduled with dataset v1.1." },
+  "NS/simple_extraction": { issue: "E-090", defect_amount: 162, note: "The published figure comes from the NSDA 2024 guide, not the 2026 guide; correction scheduled with dataset v1.1." },
+};
+const num = (s) => (s === "" || s == null ? null : Number(s));
+const canada = { provinces: {}, cdcp: {} };
+for (const r of csv(read(CA_CSV))) {
+  const p = (canada.provinces[r.province_code] ??= { name: r.province, fees: {} });
+  const rev = UNDER_REVIEW[`${r.province_code}/${r.procedure}`];
+  if (rev) {
+    if (num(r.amount_cad) !== rev.defect_amount)
+      issues.push(`canada ${r.province_code}/${r.procedure}: amount ${r.amount_cad} != defect value ${rev.defect_amount} of ${rev.issue}: re-check before releasing the row`);
+    p.fees[r.procedure] = { data_quality: "under_review", issue: rev.issue, note: rev.note, source_url: r.source_url };
+    continue;
+  }
+  p.fees[r.procedure] = {
+    amount_cad: num(r.amount_cad),
+    min_cad: num(r.min_cad),
+    max_cad: num(r.max_cad),
+    is_estimate: r.is_estimate === "true",
+    source_url: r.source_url,
+  };
+}
+for (const k of Object.keys(UNDER_REVIEW)) {
+  const [pc, pr] = k.split("/");
+  if (!canada.provinces[pc]?.fees[pr]) issues.push(`canada ${k}: row under review not found in ${CA_CSV}`);
+}
+const CDCP_ROW = {
+  recall_exam: "Examen de rappel",
+  scaling_per_unit: "Détartrage",
+  filling_1surface_composite: "Obturation permanente",
+  simple_extraction: "Extraction simple",
+  root_canal_molar: "Traitement de canal",
+  complete_denture_per_arch: "Prothèse complète",
+  partial_denture_cast_metal: "Prothèse partielle",
+  crown_ceramic: "Couronne /",
+  single_implant_fixture_abutment_crown: "Implant dentaire",
+};
+const cdcpRows = csv(read(CDCP_CSV));
+for (const [key, prefix] of Object.entries(CDCP_ROW)) {
+  const r = cdcpRows.find((x) => x.procedure.startsWith(prefix));
+  if (!r) { issues.push(`cdcp: no matrix row for ${key}`); continue; }
+  canada.cdcp[key] = {
+    matrix_row: r.procedure,
+    covered: r.covered,
+    preauth_required: r.preauth_required.toLowerCase(),
+    rule_fr: r.cdcp_reimbursement_basis,
+    notes_fr: r.notes,
+    source_url: r.source_url,
+  };
+}
+const caTs = read("lib/canada-data.ts");
+const tierBlock = caTs.match(/CDCP_TIERS[^=]*=\s*\[([\s\S]*?)\];/)?.[1] ?? "";
+canada.tiers = [...tierBlock.matchAll(/\{\s*id:\s*"([^"]+)",\s*bandEn:\s*"([^"]+)",\s*bandFr:\s*"([^"]+)",\s*cdcpSharePct:\s*(\d+),\s*copayPct:\s*(\d+)\s*\}/g)].map((m) => ({
+  id: m[1],
+  band_en: m[2],
+  band_fr: m[3],
+  lower_bound_cad: /^Under/.test(m[2]) ? 0 : Number(m[2].match(/\$([\d,]+)/)[1].replace(/,/g, "")),
+  cdcp_share_pct: Number(m[4]),
+  copay_pct: Number(m[5]),
+}));
+if (canada.tiers.length !== 4) issues.push(`cdcp: ${canada.tiers.length} income tiers parsed from lib/canada-data.ts, expected 4`);
+if (canada.tiers.some((t, i) => t.cdcp_share_pct + t.copay_pct !== 100 || (i && t.lower_bound_cad <= canada.tiers[i - 1].lower_bound_cad)))
+  issues.push("cdcp: income tiers not ascending or share + copay != 100");
+// Tier source as cited by the site (app/ca/cdcp-eligibility-income-tiers: "Source: canada.ca/.../coverage.html, effective 2026").
+canada.tiers_source = {
+  source: "Government of Canada, Canadian Dental Care Plan coverage page (co-payment by adjusted family net income)",
+  source_url: "https://www.canada.ca/en/services/benefits/dental/dental-care-plan/coverage.html",
+  period: "2026",
+};
+canada.dataset = {
+  doi_url: "https://doi.org/10.5281/zenodo.20744781",
+  csv_url: `${SITE}/data/canada-dental-cost-index-by-province-2026.csv`,
+  cdcp_csv_url: `${SITE}/data/cdcp-coverage-matrix-2026.csv`,
+  audited_at: "2026-06-18",
+};
+
+// ---------------------------------------------------------------------------
 // write + manifest
 // ---------------------------------------------------------------------------
 fs.mkdirSync(out, { recursive: true });
@@ -244,6 +367,8 @@ const files = {
   "rules.json": rules,
   "options.json": options,
   "chains.json": chainsOut,
+  "meps.json": meps,
+  "canada.json": canada,
 };
 for (const [name, data] of Object.entries(files)) {
   const buf = Buffer.from(JSON.stringify(data));

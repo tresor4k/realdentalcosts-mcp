@@ -2,7 +2,7 @@
  * Shared tool registration for realdentalcosts-mcp, used by both the stdio
  * binary (src/index.ts) and the Streamable HTTP entry point (src/http.ts).
  *
- * createServer() registers 3 cost tools + 4 treatment-plan tools (the modelled
+ * createServer() registers 3 cost tools + 4 treatment-plan tools + 4 lot C1 tools (the modelled
  * out-of-pocket tool was removed). createServer({ appsSdk: true }) additionally
  * returns `structuredContent` and declares the MCP Apps widgets (price card, plan card;
  * versioned URIs in widget.ts, earlier URIs still served through ResourceTemplates).
@@ -18,7 +18,19 @@ import {
 import { nationalTriple, PROC_LABELS_ES } from "./lib/pricing.js";
 import { findCity, suggestCities } from "./lib/cities.js";
 import { WIDGET_URI, WIDGET_MIME, WIDGET_HTML, PLAN_WIDGET_URI, PLAN_WIDGET_HTML } from "./widget.js";
-import { benchmarkTreatmentPlan, medicaidAdultDentalRules, medicaidPaidByCode, lowCostDentalOptions } from "./lib/rdc.js";
+import {
+  benchmarkTreatmentPlan,
+  medicaidAdultDentalRules,
+  medicaidPaidByCode,
+  lowCostDentalOptions,
+  compareStates,
+  usDentalSpendingStats,
+  canadaDentalCostByProvince,
+  cdcpCoverageCheck,
+  sourceNotes,
+  CA_PROVINCE_CODES,
+  CA_PROCEDURES,
+} from "./lib/rdc.js";
 
 const SOURCE = "Real Dental Costs — US Dental Cost Index 2026";
 const API_BASE = "https://realdentalcosts.com/api/v1";
@@ -182,7 +194,7 @@ export const DO_NOT =
   "Do not use for: diagnosis, treatment choice, a named insurer's plan price, dentist recommendations, countries other than the US and Canada.";
 const STAMP = " Observed market research with a source URL and period on every figure; not a quote, not medical advice.";
 const INSTRUCTIONS =
-  "Real Dental Costs gives observed US dental cost research: cash bands for 12 procedures by state, by city (implants) and nationally; what Medicaid paid per claim line for 61 CDT codes; each state's adult Medicaid dental rule and annual dollar cap; a line-by-line check of a treatment plan; and low-cost care routes (dental schools, health centers, shortage areas). Every figure carries its source URL and period, and a missing figure says no_source_at_this_level instead of being invented. Observed market research, not quotes, not medical advice. The tools do not cover diagnosis, treatment choice, a named insurer's plan, dentist recommendations or countries other than the US and Canada.";
+  "Real Dental Costs gives observed US dental cost research: cash bands for 12 procedures by state, by city (implants), nationally and for 2 to 5 states side by side; national dental spending and out-of-pocket statistics (MEPS); what Medicaid paid per claim line for 61 CDT codes; each state's adult Medicaid dental rule and annual dollar cap; a line-by-line check of a treatment plan; and low-cost care routes (dental schools, health centers, shortage areas). For Canada: provincial fee amounts for 9 procedures and a Canadian Dental Care Plan coverage and co-pay check by income tier. Every figure carries its source URL and period, and a missing figure says no_source_at_this_level instead of being invented. Observed market research, not quotes, not medical advice. The tools do not cover diagnosis, treatment choice, a named insurer's plan, dentist recommendations or countries other than the US and Canada.";
 
 export function createServer({ appsSdk = false, utm = "mcp", uiDomain = true, publicOrigin }: CreateServerOptions = {}): McpServer {
 const origin = appsSdk ? checkedOrigin(publicOrigin) : DEFAULT_PUBLIC_ORIGIN;
@@ -584,6 +596,108 @@ server.registerTool(
   async ({ state, county, lang }) => {
     logCall("low_cost_dental_options");
     return planResult(lowCostDentalOptions(state, county, lang));
+  },
+);
+
+// ---------------------------------------------------------------------------
+// 8-11. Lot C1: state side by side, national spending (MEPS), Canada provinces, CDCP co-pay
+// ---------------------------------------------------------------------------
+const withNotes = (r: Record<string, unknown>) => planResult({ ...r, source_notes: sourceNotes(r) });
+const caProvinceEnum = z
+  .enum(CA_PROVINCE_CODES as unknown as [string, ...string[]])
+  .describe(`Two-letter Canadian province or territory code. One of: ${CA_PROVINCE_CODES.join(", ")}.`);
+const caProcedureEnum = z
+  .enum(CA_PROCEDURES as unknown as [string, ...string[]])
+  .describe(`Procedure key. One of: ${CA_PROCEDURES.join(", ")}.`);
+
+server.registerTool(
+  "compare_states",
+  {
+    title: "Dental cost in 2 to 5 US states side by side",
+    description:
+      'Use this when the user wants two to five US states side by side for one of the 12 procedures (exam and cleaning, filling, deep cleaning, extraction, root canal, crown, implant, All-on-4, dentures, braces, veneer, whitening), for instance before a move or before travelling for care. Returns, for each state, the cash band (low / average / high) with its basis badge (observed or estimated), its rank among the 51 state averages and its gap in percent to the national mean, plus the national band; cosmetic procedures carry no state variation. Phrasings: "line up implant costs in Texas, Florida and Arizona", "dentures in Ohio and Michigan side by side", "¿dónde sale más barato un implante, en Texas o en California?", "compara el costo de una corona en Nueva York y Nueva Jersey". ' +
+      DO_NOT +
+      STAMP,
+    inputSchema: {
+      procedure: procedureEnum,
+      states: z.array(stateEnum).min(2).max(5).describe("2 to 5 two-letter state codes (DC allowed)."),
+      lang: langSchema,
+    },
+    annotations: ann("Dental cost in 2 to 5 US states side by side"),
+    ...planMeta("Lining up the states…"),
+  },
+  async ({ procedure, states, lang }) => {
+    const codes = [...new Set(states)];
+    if (codes.length < 2) return errorResult("Give 2 to 5 different state codes.");
+    logCall("compare_states");
+    return withNotes(compareStates(procedure, codes, lang));
+  },
+);
+
+server.registerTool(
+  "us_dental_spending_stats",
+  {
+    title: "US dental spending and out-of-pocket statistics (MEPS)",
+    description:
+      'Use this when the user asks how much people in the United States spend on dental care in a year, what share they pay out of pocket, or how many people see a dentist, at national level. Returns survey-weighted national figures from the federal Medical Expenditure Panel Survey (MEPS, AHRQ) for 2023 and 2024: spending per person, out-of-pocket amounts (mean, median, share of spending), total spending, share of people with a dental visit, plus the paired 2023-2024 change for the same persons with its 95% confidence interval. Person-level spending, not the cost of a procedure: procedure costs go to dental_cost_by_state. Phrasings: "how much does a typical American spend at the dentist per year", "what part of dental bills do US households cover themselves", "¿cuánto gasta al año un estadounidense en el dentista?", "gasto de bolsillo en odontología en Estados Unidos". ' +
+      DO_NOT +
+      STAMP,
+    inputSchema: { lang: langSchema },
+    annotations: ann("US dental spending and out-of-pocket statistics (MEPS)"),
+    ...planMeta("Reading the national spending survey…"),
+  },
+  async ({ lang }) => {
+    logCall("us_dental_spending_stats");
+    return withNotes(usDentalSpendingStats(lang));
+  },
+);
+
+server.registerTool(
+  "canada_dental_cost_by_province",
+  {
+    title: "Dental cost by Canadian province",
+    description:
+      'Use this when the user asks what a dental procedure costs in a Canadian province, for one of 9 procedures: recall exam, scaling (per unit), one-surface composite filling, simple extraction, molar root canal, complete denture, cast partial denture, ceramic crown, single implant. Returns the amount in Canadian dollars per row from the provincial suggested-fee guide or the listed source, with its source URL and an estimated badge where the dataset marks one (open dataset, DOI 10.5281/zenodo.20744781, 10 provinces; territories return no_source_at_this_level). Rows under a data-quality review are withheld with their issue number. Phrasings: "what does a crown run in Alberta", "root canal fees in Nova Scotia", "¿cuánto cuesta una limpieza dental en Ontario?", "costo de un implante dental en Columbia Británica". ' +
+      DO_NOT +
+      STAMP,
+    inputSchema: {
+      province: caProvinceEnum,
+      procedure: caProcedureEnum.optional().describe("Optional procedure key; all 9 when omitted."),
+      lang: langSchema,
+    },
+    annotations: ann("Dental cost by Canadian province"),
+    ...planMeta("Reading the provincial fee data…"),
+  },
+  async ({ province, procedure, lang }) => {
+    logCall("canada_dental_cost_by_province");
+    return withNotes(canadaDentalCostByProvince(province, procedure, lang));
+  },
+);
+
+server.registerTool(
+  "cdcp_coverage_check",
+  {
+    title: "Canadian Dental Care Plan coverage and co-pay check",
+    description:
+      'Use this when the user asks whether the Canadian Dental Care Plan (CDCP) covers a dental procedure and what share they would pay, given an adjusted family net income and a province. Returns the CDCP income tier (share paid by the plan and co-pay percentage), the coverage status and pre-authorization rule of each of the 9 procedures from the federal plan guide, and, when a procedure is given, an estimated co-pay in Canadian dollars on the provincial fee reference (badge estimated; the plan pays on its own fee grid). Only an income figure and a province are asked: no name, SIN, date of birth or insurer. Phrasings: "would CDCP pay for a crown with a family net income of 75k in Ontario", "my share for a filling under the federal dental plan in Manitoba", "¿el plan dental canadiense cubre una endodoncia si la familia gana 72 000 al año?", "copago del CDCP para una extracción en Québec". ' +
+      DO_NOT +
+      STAMP,
+    inputSchema: {
+      adjusted_family_net_income_cad: z
+        .number()
+        .min(0)
+        .max(10_000_000)
+        .describe("Adjusted family net income in Canadian dollars (the tax-return figure). No other personal data."),
+      province: caProvinceEnum,
+      procedure: caProcedureEnum.optional().describe("Optional procedure key for an estimated co-pay."),
+      lang: langSchema,
+    },
+    annotations: ann("Canadian Dental Care Plan coverage and co-pay check"),
+    ...planMeta("Checking the dental care plan rules…"),
+  },
+  async ({ adjusted_family_net_income_cad, province, procedure, lang }) => {
+    logCall("cdcp_coverage_check");
+    return withNotes(cdcpCoverageCheck(adjusted_family_net_income_cad, province, procedure, lang));
   },
 );
 

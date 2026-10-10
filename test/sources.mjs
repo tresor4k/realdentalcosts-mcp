@@ -6,6 +6,8 @@
  * Also fails if a cell flagged nominal_amounts_suspected exposes any dollar figure.
  * The nearest marked ancestor decides; the root may not carry a source_url.
  * Sweeps every state, every one of the 61 codes, and the golden plans; also checks size.
+ * Lot C1: compare_states, us_dental_spending_stats, canada_dental_cost_by_province, cdcp_coverage_check;
+ * under_review Canada rows must carry no number.
  * Caps table: fails if a cap_usd is set without source_url + a verbatim quote containing the number.
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -76,6 +78,54 @@ for (const code of CODES) {
 await check("low_cost_dental_options", { state: "OH", county: "Franklin" });
 await check("low_cost_dental_options", { state: "OH", county: "Nowhere" });
 await check("benchmark_treatment_plan", { state: "AZ", lines: [{ code: "D2740", quoted_usd: 1450 }, { code: "D3330", quoted_usd: 1350 }, { code: "D4341", qty: 4, quoted_usd: 1100 }, { code: "D0367", quoted_usd: 350 }] });
+// Lot C1: compare_states (every procedure), MEPS, Canada (13 provinces/territories × 9 procedures), CDCP (incomes × provinces × procedures).
+const PROCS = Object.keys(data("procedures")).sort();
+for (const procedure of PROCS)
+  for (let i = 0; i < STATES.length; i += 5) {
+    const states = STATES.slice(i, i + 5);
+    if (states.length >= 2) await check("compare_states", { procedure, states });
+  }
+await check("us_dental_spending_stats", {});
+await check("us_dental_spending_stats", { lang: "es" });
+const canada = data("canada");
+const CA = ["AB", "BC", "MB", "NB", "NL", "NS", "NT", "NU", "ON", "PE", "QC", "SK", "YT"];
+const CA_PROCS = Object.keys(canada.cdcp);
+let withheld = 0;
+const seenIssues = new Set();
+async function caCheck(name, args) {
+  const res = await client.callTool({ name, arguments: args });
+  calls++;
+  maxBytes = Math.max(maxBytes, Buffer.byteLength(JSON.stringify(res)));
+  const sc = res.structuredContent;
+  if (!sc) return errors.push(`${name} ${JSON.stringify(args)}: no structuredContent`);
+  walk(sc, `${name}(${JSON.stringify(args)})`, null);
+  (function scan(o) {
+    if (Array.isArray(o)) return o.forEach(scan);
+    if (!o || typeof o !== "object") return;
+    if (o.data_quality === "under_review") {
+      withheld++;
+      seenIssues.add(o.issue);
+      if (Object.values(o).some((v) => typeof v === "number")) errors.push(`${name} ${JSON.stringify(args)}: number on an under_review row`);
+    }
+    Object.values(o).forEach(scan);
+  })(sc);
+  return sc;
+}
+for (const province of CA) {
+  await caCheck("canada_dental_cost_by_province", { province });
+  for (const procedure of CA_PROCS) await caCheck("canada_dental_cost_by_province", { province, procedure, lang: "es" });
+  for (const income of [0, 69999.99, 70000, 85000, 90000, 250000]) {
+    await caCheck("cdcp_coverage_check", { adjusted_family_net_income_cad: income, province });
+    for (const procedure of CA_PROCS) {
+      const sc = await caCheck("cdcp_coverage_check", { adjusted_family_net_income_cad: income, province, procedure });
+      const t = sc?.income_tier;
+      const want = income < 70000 ? 0 : income < 80000 ? 40 : income < 90000 ? 60 : 100;
+      if (t && t.copay_pct !== want) errors.push(`cdcp ${income}: copay ${t.copay_pct}, expected ${want}`);
+    }
+  }
+}
+for (const id of ["E-081", "E-086", "E-087", "E-094"]) if (!seenIssues.has(id)) errors.push(`Canada: issue ${id} never surfaced as under_review`);
+console.log(`Canada: ${withheld} under_review rows seen (${[...seenIssues].sort().join(", ")}), none with a number`);
 // Annual-cap table: one row = one proof. A figure needs a source_url and a verbatim quote containing it.
 const caps = JSON.parse(fs.readFileSync(path.join(root, "data", "medicaid-adult-dental-caps-2026.json"), "utf8")).states;
 const KINDS = ["annual_dollar_cap", "no_dollar_cap", "emergency_only", "no_adult_benefit", "not_verified"];

@@ -13,6 +13,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { COMPARE_PRICES } from "./compare-data.js";
+import { nationalTriple, PROC_LABELS_ES } from "./pricing.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Any = any;
@@ -23,7 +25,7 @@ let cache: Record<string, Any> | null = null;
 function D(): Record<string, Any> {
   if (!cache) {
     cache = {};
-    for (const f of ["medicaid", "states", "procedures", "rules", "options", "chains", "manifest"])
+    for (const f of ["medicaid", "states", "procedures", "rules", "options", "chains", "meps", "canada", "manifest"])
       cache[f] = JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${f}.json`), "utf8"));
   }
   return cache;
@@ -614,4 +616,266 @@ export function sourceNotes(obj: Any): Any[] {
   };
   walk(obj);
   return [...seen.values()];
+}
+
+// ---------------------------------------------------------------------------
+// lot C1: compare_states, us_dental_spending_stats, canada_dental_cost_by_province, cdcp_coverage_check
+// ---------------------------------------------------------------------------
+const pct1 = (n: number) => Math.round(n * 10) / 10;
+
+/** 2-5 states side by side for one procedure: values from compare-data.ts, provenance from API v1 /state/{st}.json. */
+export function compareStates(procId: string, codes: string[], lang: Lang): Any {
+  const d = D();
+  const nat = d.procedures[procId];
+  const all = Object.keys(COMPARE_PRICES);
+  const noStateVariation = nat.basis === "national";
+  const [nLow, nAvg, nHigh] = nationalTriple(procId).map(Math.round);
+  const states = codes.map((st) => {
+    const [low, avg, high] = COMPARE_PRICES[st][procId];
+    const p = d.states[st].procedures[procId].provenance;
+    return {
+      code: st,
+      name: d.states[st].name,
+      low_usd: low,
+      avg_usd: avg,
+      high_usd: high,
+      currency: "USD",
+      badges: { ...badges(nat.basis), ...(noStateVariation ? {} : { rank_by_avg: "derived", vs_national_avg_pct: "derived" }) },
+      ...(noStateVariation
+        ? { state_variation: "none: every state carries the national range" }
+        : {
+            rank_by_avg: all.filter((s) => COMPARE_PRICES[s][procId][1] < avg).length + 1,
+            of_states: all.length,
+            vs_national_avg_pct: pct1(((avg - nAvg) / nAvg) * 100),
+          }),
+      source: p.source,
+      source_url: p.source_url,
+      period: p.period,
+      updated: p.updated,
+      link: stateHubUrl(st),
+    };
+  });
+  const prov = nat.provenance;
+  return {
+    tool: "compare_states",
+    procedure: { id: procId, label: lang === "es" ? PROC_LABELS_ES[procId] ?? nat.label : nat.label, basis: nat.basis, basis_note: nat.basis_note },
+    states,
+    national: {
+      geo: "national",
+      low_usd: nLow,
+      avg_usd: nAvg,
+      high_usd: nHigh,
+      currency: "USD",
+      method: "Mean of the 51 state figures (incl. DC).",
+      badges: { avg_usd: "derived", low_usd: "estimated", high_usd: "estimated" },
+      source: prov.source,
+      source_url: prov.source_url,
+      period: prov.period,
+    },
+    legend: {
+      rank_by_avg: "1 = the state with the smallest average among the 51 (ties share a rank).",
+      badges: "observed = measured average; estimated = modelled figure; derived = computed here from the figures shown.",
+    },
+    links: { compare: `${SITE}/en/compare/?${UTM}`, methodology: `${SITE}/en/methodology/?${UTM}` },
+    disclaimer: T.disclaimer[lang],
+  };
+}
+
+/** National MEPS figures (AHRQ), as computed and published by Real Dental Costs (API v1 /meps/*.json). */
+export function usDentalSpendingStats(lang: Lang): Any {
+  const { national: n, longitudinal: l } = D().meps;
+  const annual = Object.keys(n.years)
+    .sort()
+    .reverse()
+    .map((y) => {
+      const f = n.files.find((x: Any) => String(x.name).startsWith(y));
+      return {
+        period: y,
+        geo: "national",
+        source: `${n.source}, ${f?.puf ?? ""} ${f?.name ?? ""}; survey-weighted estimates computed by Real Dental Costs`.replace(/\s+/g, " "),
+        source_url: n.endpoint,
+        upstream_url: f?.url ?? null,
+        upstream_released: f?.released ?? null,
+        figures: n.years[y],
+      };
+    });
+  const lf = l.files[0] ?? {};
+  return {
+    tool: "us_dental_spending_stats",
+    measure_note:
+      lang === "es"
+        ? "Gasto por persona (todos los pagadores) y gasto de bolsillo de la encuesta federal MEPS: no es el costo de un procedimiento."
+        : "Person-level spending (all payers) and out-of-pocket amounts from the federal MEPS survey: not the cost of a procedure.",
+    annual,
+    paired_change_same_persons: {
+      period: "2023-2024",
+      geo: "national",
+      population: "the same persons in both years (MEPS Panel 28 longitudinal file)",
+      source: `${l.source}, ${lf.puf ?? ""} ${lf.name ?? ""}; computed by Real Dental Costs`.replace(/\s+/g, " "),
+      source_url: l.endpoint,
+      upstream_url: lf.url ?? null,
+      upstream_released: lf.released ?? null,
+      figures: l.paired_change,
+      reading: l.reading,
+    },
+    caveats: [...n.caveats, ...l.caveats.filter((c: string) => !n.caveats.includes(c))],
+    links: { api: `${SITE}/en/api/?${UTM}`, methodology: `${SITE}/en/methodology/?${UTM}` },
+    disclaimer: T.disclaimer[lang],
+  };
+}
+
+export const CA_PROVINCE_CODES = ["AB", "BC", "MB", "NB", "NL", "NS", "NT", "NU", "ON", "PE", "QC", "SK", "YT"] as const;
+export const CA_PROCEDURES = [
+  "recall_exam",
+  "scaling_per_unit",
+  "filling_1surface_composite",
+  "simple_extraction",
+  "root_canal_molar",
+  "complete_denture_per_arch",
+  "partial_denture_cast_metal",
+  "crown_ceramic",
+  "single_implant_fixture_abutment_crown",
+] as const;
+const CA_NAMES: Record<string, [string, string]> = {
+  AB: ["Alberta", "Alberta"], BC: ["British Columbia", "Columbia Británica"], MB: ["Manitoba", "Manitoba"],
+  NB: ["New Brunswick", "Nuevo Brunswick"], NL: ["Newfoundland and Labrador", "Terranova y Labrador"],
+  NS: ["Nova Scotia", "Nueva Escocia"], NT: ["Northwest Territories", "Territorios del Noroeste"], NU: ["Nunavut", "Nunavut"],
+  ON: ["Ontario", "Ontario"], PE: ["Prince Edward Island", "Isla del Príncipe Eduardo"], QC: ["Quebec", "Quebec"],
+  SK: ["Saskatchewan", "Saskatchewan"], YT: ["Yukon", "Yukón"],
+};
+const CA_LABELS: Record<string, [string, string]> = {
+  recall_exam: ["Recall exam", "Examen de control"],
+  scaling_per_unit: ["Scaling / cleaning (per unit)", "Limpieza / raspado (por unidad)"],
+  filling_1surface_composite: ["Composite filling (1 surface)", "Empaste de resina (1 superficie)"],
+  simple_extraction: ["Simple extraction", "Extracción simple"],
+  root_canal_molar: ["Root canal (molar)", "Endodoncia (molar)"],
+  complete_denture_per_arch: ["Complete denture (per arch)", "Dentadura completa (por arcada)"],
+  partial_denture_cast_metal: ["Cast partial denture", "Dentadura parcial colada"],
+  crown_ceramic: ["Ceramic crown", "Corona de cerámica"],
+  single_implant_fixture_abutment_crown: ["Single implant (fixture, abutment, crown)", "Implante unitario (implante, pilar, corona)"],
+};
+const CA_SLUG: Record<string, string> = {
+  AB: "alberta", BC: "british-columbia", MB: "manitoba", NB: "new-brunswick", NL: "newfoundland-and-labrador",
+  NS: "nova-scotia", ON: "ontario", PE: "prince-edward-island", QC: "quebec", SK: "saskatchewan",
+};
+const caName = (p: string, lang: Lang) => CA_NAMES[p][lang === "es" ? 1 : 0];
+const caLabel = (k: string, lang: Lang) => CA_LABELS[k][lang === "es" ? 1 : 0];
+const CA_PERIOD_NOTE = "Dataset edition 2026; the source of a row may be an earlier guide (see source_url).";
+
+function caFee(prov: string, key: string, lang: Lang): Any {
+  const c = D().canada;
+  const head = { procedure: key, label: caLabel(key, lang) };
+  const f = c.provinces[prov]?.fees[key];
+  if (!f)
+    return {
+      ...head,
+      status: "no_source_at_this_level",
+      geo: c.provinces[prov] ? "province" : "territory",
+      reason: "The open dataset covers the 10 provinces; it has no row here.",
+      next_level: { geo: "national", status: "no_source_at_this_level", reason: "The dataset publishes no Canada-wide figure per procedure." },
+    };
+  if (f.data_quality === "under_review")
+    return { ...head, status: "withheld", data_quality: "under_review", issue: f.issue, note: f.note, row_source_url: f.source_url };
+  return {
+    ...head,
+    status: "ok",
+    amount_cad: f.amount_cad,
+    ...(f.min_cad != null ? { min_cad: f.min_cad } : {}),
+    ...(f.max_cad != null ? { max_cad: f.max_cad } : {}),
+    currency: "CAD",
+    badge: f.is_estimate ? "estimated" : "observed",
+    source_url: f.source_url,
+    period: "2026",
+    period_note: CA_PERIOD_NOTE,
+  };
+}
+
+export function canadaDentalCostByProvince(prov: string, key: string | undefined, lang: Lang): Any {
+  const c = D().canada;
+  const keys = key ? [key] : [...CA_PROCEDURES];
+  return {
+    tool: "canada_dental_cost_by_province",
+    province: { code: prov, name: caName(prov, lang) },
+    fees: keys.map((k) => caFee(prov, k, lang)),
+    legend: {
+      amount_cad: "Amount per row as published by its source (a provincial suggested-fee guide, or a clinic or relay page where the guide is not public); min/max when the source gives a range.",
+      badges: "observed = amount read in the cited source; estimated = marked as an estimate in the dataset.",
+      under_review: "A row with an open data-quality issue is withheld (no value) until the dataset correction.",
+      cdcp: "The Canadian Dental Care Plan pays on its own fee grid, often below these amounts: see cdcp_coverage_check.",
+    },
+    dataset: { ...c.dataset },
+    links: {
+      ...(CA_SLUG[prov] ? { province: `${SITE}/ca/dental-costs-${CA_SLUG[prov]}/?${UTM}` } : {}),
+      methodology: `${SITE}/en/methodology/?${UTM}`,
+    },
+    disclaimer: T.disclaimer[lang],
+  };
+}
+
+export function cdcpCoverageCheck(income: number, prov: string, key: string | undefined, lang: Lang): Any {
+  const c = D().canada;
+  const t = [...c.tiers].reverse().find((x: Any) => income >= x.lower_bound_cad) ?? c.tiers[0];
+  const eligible = t.cdcp_share_pct > 0;
+  const keys = key ? [key] : [...CA_PROCEDURES];
+  const coverage = keys.map((k) => {
+    const r = c.cdcp[k];
+    return {
+      procedure: k,
+      label: caLabel(k, lang),
+      covered: r.covered,
+      preauth_required: r.preauth_required,
+      rule_fr: r.rule_fr,
+      ...(key ? { notes_fr: r.notes_fr } : {}),
+      source_url: r.source_url,
+      period: "2026",
+      as_of: c.dataset.audited_at,
+    };
+  });
+  let estimate: Any;
+  if (!key) estimate = { status: "procedure_required", reason: "Give a procedure to get an estimated co-pay." };
+  else if (!eligible) estimate = { status: "not_eligible_by_income", reason: "The plan pays no share at this income tier." };
+  else if (c.cdcp[key].covered === "no") estimate = { status: "not_covered", reason: "The plan guide excludes this procedure." };
+  else {
+    const fee = caFee(prov, key, lang);
+    estimate =
+      fee.status !== "ok"
+        ? { status: "no_fee_reference", fee_reference: fee }
+        : {
+            status: "ok",
+            badge: "estimated",
+            fee_reference_cad: fee.amount_cad,
+            copay_pct: t.copay_pct,
+            cdcp_share_pct: t.cdcp_share_pct,
+            estimated_copay_cad: round2((fee.amount_cad * t.copay_pct) / 100),
+            estimated_cdcp_share_cad: round2((fee.amount_cad * t.cdcp_share_pct) / 100),
+            currency: "CAD",
+            method:
+              "Provincial fee reference x income-tier percentages. The plan applies the percentages to its own grid fee, often below the provincial guide; a dentist may bill the difference, so the real balance can be higher.",
+            ...(c.cdcp[key].preauth_required !== "false" ? { preauth: "Pre-authorization may be required: see coverage[].rule_fr." } : {}),
+            source_url: fee.source_url,
+            period: "2026",
+            tier_source_url: c.tiers_source.source_url,
+          };
+  }
+  return {
+    tool: "cdcp_coverage_check",
+    input: { basis: "user_input", adjusted_family_net_income_cad: income, province: prov },
+    province: { code: prov, name: caName(prov, lang) },
+    income_tier: {
+      id: t.id,
+      band: t.band_en,
+      lower_bound_cad: t.lower_bound_cad,
+      cdcp_share_pct: t.cdcp_share_pct,
+      copay_pct: t.copay_pct,
+      eligible_by_income: eligible,
+      note: "Income is one eligibility condition; the Government of Canada sets the others (see source). Percentages apply to the plan's own fee grid, not to a dentist's bill.",
+      source: c.tiers_source.source,
+      source_url: c.tiers_source.source_url,
+      period: c.tiers_source.period,
+    },
+    coverage,
+    estimate,
+    links: { tiers: `${SITE}/ca/cdcp-eligibility-income-tiers/?${UTM}`, coverage: `${SITE}/ca/cdcp-coverage/?${UTM}` },
+    disclaimer: T.disclaimer[lang],
+  };
 }

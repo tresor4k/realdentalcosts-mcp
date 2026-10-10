@@ -35,7 +35,7 @@ const VARIANTS = [
 for (const [label, options] of VARIANTS) {
   test(`${label}: descriptions have no price, superlative or comparison; "Use this when", 2 EN + 2 ES phrasings, "Do not use for"`, async () => {
     const { tools, instructions } = await listTools(options);
-    assert.equal(tools.length, 7);
+    assert.equal(tools.length, 11);
     for (const t of tools) {
       const text = [t.title, t.description, JSON.stringify(t.inputSchema)].join(" ");
       assert.doesNotMatch(text.split(DO_NOT).join(" "), PRICE, `${t.name}: price`);

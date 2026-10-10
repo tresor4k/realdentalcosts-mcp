@@ -1,5 +1,5 @@
 {
-  "synced_at": "2026-10-10T08:43:48.974Z",
+  "synced_at": "2026-10-10T09:21:32.469Z",
   "api_generated_at": "2026-10-01T07:28:32.762Z",
   "site_dir": "../dentist/web",
   "inputs": [
@@ -1162,6 +1162,31 @@
       "file": "public/api/v1/chains/affordable-dentures-implants.json",
       "sha256": "57c728d338109d77d552efee71724ad444cfb2d5aad1d56dd3e8978eaa9389d6",
       "bytes": 1605050
+    },
+    {
+      "file": "public/api/v1/meps/national.json",
+      "sha256": "5a5d243299a935c6ec76a7d3789aa94c6cb5657d0954e09adb7d02c3466c86f1",
+      "bytes": 5261
+    },
+    {
+      "file": "public/api/v1/meps/longitudinal.json",
+      "sha256": "8bd20c6fa62dc9f645e78c502f90731fde69ea786b651b8f899b50cc4d564ffb",
+      "bytes": 19986
+    },
+    {
+      "file": "public/data/canada-dental-cost-index-by-province-2026.csv",
+      "sha256": "6d126bf0001557432a899487e77e8867ee54f564cb48b3af9eb17e991a5af92e",
+      "bytes": 12593
+    },
+    {
+      "file": "public/data/cdcp-coverage-matrix-2026.csv",
+      "sha256": "4165a3e4130f15edd04f9eaad5d0cd938d5805058554b3af1c9b6c8373efd753",
+      "bytes": 7613
+    },
+    {
+      "file": "lib/canada-data.ts",
+      "sha256": "1f67e3181a7a9fda57af3e1148cfe94ef8996723b4929cdc37b919f19785a170",
+      "bytes": 17907
     }
   ],
   "outputs": [
@@ -1194,6 +1219,16 @@
       "file": "chains.json",
       "sha256": "7de6d628a0cddef1f5584a3ebf98794a2f5a370ae0c46692066a98a742e11758",
       "bytes": 8728
+    },
+    {
+      "file": "meps.json",
+      "sha256": "4476d37f4ffdcb2f3130be3d7f776f1d16ebe7379e6278ef88416745e6309e04",
+      "bytes": 5596
+    },
+    {
+      "file": "canada.json",
+      "sha256": "b64103bee9fdfb43baea446a39f1999af1c0abfd55a6cc4c26fe0a696f45c21b",
+      "bytes": 25713
     }
   ],
   "issues": [

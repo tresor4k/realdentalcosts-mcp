@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased] - lot C1 (2026-10-10, not deployed)
+
+- 4 sourced data tools: `compare_states` (2-5 states × 1 procedure, rank among 51, gap to the national mean), `us_dental_spending_stats` (MEPS 2023 + 2024 cross-sections and the paired 2023-2024 change), `canada_dental_cost_by_province` (CSV under DOI 10.5281/zenodo.20744781, 10 provinces, territories `no_source_at_this_level`), `cdcp_coverage_check` (income tier, coverage matrix, `estimated` co-pay; income + province only).
+- Canada rows hit by open data-quality issues E-081, E-086, E-087, E-090, E-094 are withheld at sync time (`data_quality: "under_review"`, no value).
+- `scripts/sync-data.mjs` writes `meps.json` and `canada.json` (sha256 in the manifest); server instructions mention Canada.
+
 ## [Unreleased] - remote server, lot A (2026-10-10, not deployed)
 
 - Remote endpoints `/mcp` (ChatGPT and other clients, widgets with `_meta.ui.domain` = `https://mcp.realdentalcosts.com`) and `/claude` (no `ui.domain`); links carry `utm_source=chatgpt`, `claude`, or `mcp` (stdio).
