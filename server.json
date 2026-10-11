@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.tresor4k/realdentalcosts-mcp",
+  "title": "Real Dental Costs",
+  "description": "Sourced US and Canadian dental prices, Medicaid and Medicare dental rules, treatment-plan checker.",
+  "repository": {
+    "url": "https://github.com/tresor4k/realdentalcosts-mcp",
+    "source": "github"
+  },
+  "version": "0.3.0",
+  "websiteUrl": "https://realdentalcosts.com",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "realdentalcosts-mcp",
+      "version": "0.2.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://realdentalcosts-mcp.vercel.app/mcp"
+    }
+  ]
+}
