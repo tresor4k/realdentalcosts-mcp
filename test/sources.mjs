@@ -70,6 +70,10 @@ for (const st of STATES) {
       lines: CODES.slice(i, i + 10).map((code, j) => ({ code, qty: 1 + (j % 3), quoted_usd: 100 + j * 37 })),
     });
   await check("benchmark_treatment_plan", { state: st, lines: ["implant", "whitening", "veneer", "dentures", "exam"].map((procedure) => ({ procedure, quoted_usd: 999 })) });
+  // Lot 1: CDT bundles (complete, partial, per arch) + city average
+  await check("benchmark_treatment_plan", { state: st, city: "Portland", lines: ["D6010", "D6057", "D6058", "D5110", "D5120", "D2962"].map((code) => ({ code, quoted_usd: 999 })) });
+  await check("benchmark_treatment_plan", { state: st, lines: [{ code: "D6115", quoted_usd: 9999 }, { code: "D6010", qty: 4, quoted_usd: 999 }, { code: "D5212", quoted_usd: 999 }] });
+  await check("benchmark_treatment_plan", { state: st, lines: [{ code: "D6010", quoted_usd: 999 }, { code: "D5120" }] });
 }
 for (const code of CODES) {
   await check("medicaid_paid_by_code", { code });

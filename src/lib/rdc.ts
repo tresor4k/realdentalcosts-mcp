@@ -15,6 +15,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { COMPARE_PRICES } from "./compare-data.js";
 import { nationalTriple, PROC_LABELS_ES } from "./pricing.js";
+import { findCity } from "./cities.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Any = any;
@@ -298,6 +299,116 @@ function chainPrices(key: string, st: string): Any | undefined {
 
 const LEVEL_MAP: Record<string, string> = { comprehensive: "extensive" };
 
+/**
+ * Codes billed as parts of one job priced by a single Real Dental Costs band. The band is compared
+ * with the SUM of the lines, and only when every group is on the plan (same quantity in each group).
+ * Labels are plain-language descriptions, not ADA descriptors.
+ */
+const CDT_BUNDLES: Record<string, { groups: string[][]; extra?: string[]; partial?: string[]; includes: string }> = {
+  implant: {
+    groups: [["D6010"], ["D6056", "D6057"], ["D6058", "D6065", "D6066", "D6067"]],
+    includes: "The single-implant band covers the whole tooth: implant body placement (D6010) + abutment (D6056 or D6057) + crown on the implant (D6058, D6065, D6066 or D6067).",
+  },
+  dentures: {
+    groups: [["D5110"], ["D5120"]],
+    partial: ["D5211", "D5212", "D5213", "D5214"],
+    includes: "The dentures band is a full set: complete upper (D5110) + complete lower (D5120) denture.",
+  },
+  veneer: { groups: [["D2962"]], includes: "The veneer band is per tooth (D2962)." },
+  allon4: {
+    groups: [["D6114", "D6115"]],
+    extra: ["D6010", "D6056", "D6057"],
+    includes: "The All-on-4 band is per arch: one full-arch fixed denture on implants (D6114 upper, D6115 lower); implant (D6010) and abutment lines on the same plan are added to the arch total.",
+  },
+};
+const BUNDLE_LABEL: Record<string, string> = {
+  D6010: "implant body placement (surgery)",
+  D6056: "prefabricated abutment",
+  D6057: "custom abutment",
+  D6058: "abutment-supported ceramic crown",
+  D6065: "implant-supported ceramic crown",
+  D6066: "implant-supported crown, porcelain fused to metal",
+  D6067: "implant-supported crown, metal",
+  D2962: "porcelain veneer",
+  D6114: "full-arch fixed denture on implants, upper",
+  D6115: "full-arch fixed denture on implants, lower",
+};
+const VERDICT: Record<string, string> = { above_high_by_pct: "above_band", below_low_by_pct: "below_band", within_band: "within_band" };
+
+/** Where an amount sits in a [low, high] band: above_band / within_band / below_band (+ % outside the edge). */
+export function bandPosition(amount: number, low: number, high: number): Any {
+  if (amount > high) return { verdict: "above_band", pct_above_high: Math.round(((amount - high) / high) * 1000) / 10 };
+  if (amount < low) return { verdict: "below_band", pct_below_low: Math.round(((low - amount) / low) * 1000) / 10 };
+  return { verdict: "within_band" };
+}
+
+function bundles(st: string, lines: PlanLine[]): Any[] {
+  const coded = lines.filter((l) => l.code).map((l) => ({ ...l, code: (l.code as string).toUpperCase(), qty: l.qty ?? 1 }));
+  const out: Any[] = [];
+  for (const [id, b] of Object.entries(CDT_BUNDLES)) {
+    const inGroups = coded.filter((l) => b.groups.some((g) => g.includes(l.code)));
+    const partial = coded.filter((l) => b.partial?.includes(l.code));
+    if (!inGroups.length && !partial.length) continue;
+    if (id === "implant" && coded.some((l) => CDT_BUNDLES.allon4.groups[0].includes(l.code))) continue; // counted per arch
+    const qtys = b.groups.map((g) => inGroups.filter((l) => g.includes(l.code)).reduce((n, l) => n + l.qty, 0));
+    const missing = b.groups.filter((_, i) => !qtys[i]).map((g) => g.join(" or "));
+    const base: Any = { bundle: id, codes: [...inGroups, ...partial].map((l) => l.code), band_includes: b.includes };
+    if (id === "dentures" && (missing.length || partial.length)) {
+      out.push({ ...base, status: "no_per_arch_band", verdict: "none", reason: "No per-arch band published: the dentures band is a full set (both arches), so a single arch or a partial denture gets no verdict." });
+      continue;
+    }
+    if (missing.length) {
+      out.push({ ...base, status: "partial_quote", verdict: "none", missing, reason: "The quote covers only part of what the band includes: no verdict until every part is on the plan.", cash_band: cashBand(id, st, null, true) });
+      continue;
+    }
+    if (qtys.some((q) => q !== qtys[0])) {
+      out.push({ ...base, status: "not_comparable_unit", verdict: "none", reason: "The parts are quoted in different quantities: split the plan per tooth or per arch." });
+      continue;
+    }
+    const all = [...inGroups, ...coded.filter((l) => b.extra?.includes(l.code))];
+    const quotedAll = all.every((l) => l.quoted_usd != null);
+    const total = quotedAll ? round2(all.reduce((n, l) => n + (l.quoted_usd as number), 0)) : null;
+    const units = qtys[0];
+    const band = cashBand(id, st, total == null ? null : round2(total / units), true);
+    const pos = band.position ?? band.next_level?.position;
+    const v = band.position ? pos.verdict : pos.vs_national ?? pos.verdict;
+    out.push({
+      ...base,
+      codes: all.map((l) => l.code),
+      status: "complete",
+      ...(total != null ? { quote: { basis: "user_input", bundle_total_usd: total, units, per_unit_usd: round2(total / units) } } : {}),
+      verdict: total == null ? "no_quote" : VERDICT[v] ?? v,
+      cash_band: band,
+    });
+  }
+  return out;
+}
+
+function cityReference(st: string, city: string): Any {
+  const f = findCity(city, st);
+  if (!f)
+    return {
+      status: "no_source_at_this_level",
+      geo: "city",
+      city,
+      reason: "This city is not in the published city dataset for this state: the state band applies.",
+    };
+  return {
+    status: "ok",
+    geo: "city",
+    city: f.city.name,
+    procedure_id: "implant",
+    label: D().procedures.implant.label,
+    basis: "observed",
+    avg_usd: f.city.costs.Implants.avg,
+    ...(f.city.clinics != null ? { clinics: f.city.clinics } : {}),
+    note: "Only the single-implant average is published per city; every other line uses the state band.",
+    source: "Real Dental Costs, US Dental Cost by City open dataset",
+    source_url: "https://doi.org/10.5281/zenodo.20819438",
+    period: "2026 dataset edition",
+  };
+}
+
 // ---------------------------------------------------------------------------
 // tool 2: medicaid_adult_dental_rules
 // ---------------------------------------------------------------------------
@@ -512,8 +623,9 @@ export interface PlanLine {
   quoted_usd?: number;
 }
 
-export function benchmarkTreatmentPlan(st: string, lines: PlanLine[], coverage: string, lang: Lang): Any {
+export function benchmarkTreatmentPlan(st: string, lines: PlanLine[], coverage: string, lang: Lang, city?: string): Any {
   const d = D();
+  const bundleOf = (code: string) => Object.keys(CDT_BUNDLES).find((id) => CDT_BUNDLES[id].groups.flat().includes(code));
   const outLines = lines.map((ln) => {
     const qty = ln.qty ?? 1;
     const input = {
@@ -527,6 +639,14 @@ export function benchmarkTreatmentPlan(st: string, lines: PlanLine[], coverage: 
     if (ln.code) {
       const code = ln.code.toUpperCase();
       const c = d.medicaid.codes[code];
+      if (!c && BUNDLE_LABEL[code])
+        return {
+          input,
+          status: "bundle_line",
+          label: BUNDLE_LABEL[code],
+          bundle: lines.some((l) => /^D611[45]$/i.test(l.code ?? "")) && CDT_BUNDLES.allon4.extra?.includes(code) ? "allon4" : bundleOf(code),
+          message: "Priced as part of a bundle (see bundles): Real Dental Costs publishes no per-line figure for this code.",
+        };
       if (!c) return { input, status: "not_covered", message: T.notCovered[lang] };
       const procId = c.cash_benchmark?.procedure_id;
       const chain = chainPrices(code, st);
@@ -563,6 +683,8 @@ export function benchmarkTreatmentPlan(st: string, lines: PlanLine[], coverage: 
   const quoted = lines.filter((l) => l.quoted_usd != null);
   const verdictOf = (l: Any) => l.cash_band?.position?.verdict ?? l.cash_band?.next_level?.position?.vs_national;
   const ref = (l: Any) => l.input.code ?? l.input.procedure;
+  const bundleOut = bundles(st, lines);
+  const bref = (b: Any) => `bundle:${b.bundle}`;
   const result: Any = {
     tool: "benchmark_treatment_plan",
     state: { code: st, name: d.states[st].name },
@@ -580,13 +702,21 @@ export function benchmarkTreatmentPlan(st: string, lines: PlanLine[], coverage: 
       ),
     },
     lines: outLines,
+    ...(bundleOut.length ? { bundles: bundleOut } : {}),
+    ...(city ? { city_reference: cityReference(st, city) } : {}),
     totals: {
       basis: "user_input",
       quoted_total_usd: round2(quoted.reduce((n, l) => n + (l.quoted_usd as number), 0)),
       lines_quoted: quoted.length,
       lines_total: lines.length,
-      above_band: outLines.filter((l) => /^above/.test(verdictOf(l) ?? "")).map(ref),
-      within_band: outLines.filter((l) => verdictOf(l) === "within_band").map(ref),
+      above_band: [
+        ...outLines.filter((l) => /^above/.test(verdictOf(l) ?? "")).map(ref),
+        ...bundleOut.filter((b) => b.verdict === "above_band").map(bref),
+      ],
+      within_band: [
+        ...outLines.filter((l) => verdictOf(l) === "within_band").map(ref),
+        ...bundleOut.filter((b) => b.verdict === "within_band").map(bref),
+      ],
       not_covered: outLines.filter((l) => l.status === "not_covered").map(ref),
     },
     medicaid_adult_rule: (() => {

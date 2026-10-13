@@ -20,6 +20,7 @@ import { findCity, suggestCities } from "./lib/cities.js";
 import { WIDGET_URI, WIDGET_MIME, WIDGET_HTML, PLAN_WIDGET_URI, PLAN_WIDGET_HTML } from "./widget.js";
 import {
   benchmarkTreatmentPlan,
+  bandPosition,
   medicaidAdultDentalRules,
   medicaidPaidByCode,
   lowCostDentalOptions,
@@ -288,12 +289,18 @@ server.registerTool(
     inputSchema: {
       procedure: procedureEnum,
       state: stateEnum,
+      quoted_usd: z
+        .number()
+        .min(0)
+        .max(500000)
+        .optional()
+        .describe("Optional amount quoted to the user for this procedure, in US dollars, in the unit of the procedure label (per tooth, per arch, full set): returns its position in the state band."),
       lang: langSchema,
     },
     annotations: ann("Dental cost by US state"),
     ...toolMeta,
   },
-  async ({ procedure, state, lang }) => {
+  async ({ procedure, state, quoted_usd, lang }) => {
     const proc = procedureById.get(procedure);
     const st = stateByCode.get(state);
     if (!proc || !st) {
@@ -324,6 +331,9 @@ server.registerTool(
         currency: "USD",
       },
       vsNationalAvgPct: Math.round(((avg - natAvg) / natAvg) * 1000) / 10,
+      ...(quoted_usd != null
+        ? { quotePosition: { basis: "user_input", quoted_usd, ...bandPosition(quoted_usd, low, high), band: "state cashPrice low-high (edges modelled)" } }
+        : {}),
       disclaimer: disclaimer(lang),
     };
     return jsonResult(payload, {
@@ -511,7 +521,7 @@ server.registerTool(
   {
     title: "Check a dental treatment plan line by line",
     description:
-      'Use this when the user has a treatment plan or quote from a US dentist (CDT codes such as D2740, or procedure names, with quantities and quoted amounts) and wants to know where each line sits. For each line, returns the state cash band (observed or estimated badge) and where the quoted amount falls in it, what Medicaid paid per claim line (T-MSIS p25 / median / p75) and the official Medicaid fee schedule with its age scope (children_only or not_verified: context only), plus the state\'s adult Medicaid rule and numbered sources. quoted_usd is the line total as quoted. Phrasings: "my dentist wrote D2740 and D4341 x4 on the plan, is that in line for Arizona", "go through this dental estimate line by line", "¿es razonable este presupuesto dental en Nevada?", "revisa mi plan de tratamiento con códigos CDT".' +
+      'Use this when the user has a treatment plan or quote from a US dentist (CDT codes such as D2740, or procedure names, with quantities and quoted amounts) and wants to know where each line sits. For each line, returns the state cash band (observed or estimated badge) and where the quoted amount falls in it, what Medicaid paid per claim line (T-MSIS p25 / median / p75) and the official Medicaid fee schedule with its age scope (children_only or not_verified: context only), plus the state\'s adult Medicaid rule and numbered sources. quoted_usd is the line total as quoted. Codes billed as parts of one job are summed into a bundle and compared with its band only when the bundle is complete: implant (D6010 + D6056 or D6057 + D6058, D6065, D6066 or D6067), full dentures (D5110 + D5120), veneer (D2962), All-on-4 per arch (D6114 or D6115); a partial bundle returns partial_quote with what the band includes, and a single arch or partial denture gets no verdict. Pass city for the published single-implant city average. Phrasings: "my dentist wrote D2740 and D4341 x4 on the plan, is that in line for Arizona", "go through this dental estimate line by line", "¿es razonable este presupuesto dental en Nevada?", "revisa mi plan de tratamiento con códigos CDT".' +
       NOTE,
     inputSchema: {
       state: stateEnum,
@@ -531,15 +541,21 @@ server.registerTool(
         .enum(["none", "medicaid_adult", "private", "medicare_advantage", "discount_plan"])
         .default("none")
         .describe("Coverage category only (no plan or insurer name)."),
+      city: z
+        .string()
+        .min(1)
+        .max(80)
+        .optional()
+        .describe('Optional city in the same state, e.g. "Portland": adds the published city average for a single implant when the city is covered.'),
       lang: langSchema,
     },
     annotations: ann("Check a dental treatment plan line by line"),
     ...planMeta("Checking the plan against sourced references…"),
   },
-  async ({ state, lines, coverage, lang }) => {
+  async ({ state, lines, coverage, city, lang }) => {
     if (lines.some((l) => !l.code && !l.procedure)) return errorResult("Each line needs a CDT code or a procedure id.");
     logCall("benchmark_treatment_plan");
-    return planResult(benchmarkTreatmentPlan(state, lines, coverage, lang));
+    return planResult(benchmarkTreatmentPlan(state, lines, coverage, lang, city));
   },
 );
 

@@ -181,6 +181,55 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
   assert(q3.changes.every((c) => c.effective_date >= "2026-07-01" && c.effective_date <= "2026-09-30") && q3.changes.some((c) => c.state === "TX") && q3.states_not_yet_tracked.includes(untracked), "period filter across states + list of untracked states");
 }
 
+// 8. Lot 1 (13/10): CDT bundles, city average, quoted_usd on dental_cost_by_state
+{
+  const ref = STATES.OR.procedures.implant;
+  const sc = await call("benchmark_treatment_plan", {
+    state: "OR",
+    city: "Portland",
+    lines: [{ code: "D6010", quoted_usd: 2926 }, { code: "D6057", quoted_usd: 1331 }, { code: "D6058", quoted_usd: 2231 }],
+  });
+  const b = sc.bundles?.find((x) => x.bundle === "implant");
+  assert(b?.status === "complete" && b.quote.bundle_total_usd === 2926 + 1331 + 2231, "OR implant bundle total = sum of the 3 lines");
+  assert(b.cash_band.low_usd === ref.low_usd && b.cash_band.avg_usd === ref.avg_usd && b.cash_band.high_usd === ref.high_usd, `OR implant band = ${ref.low_usd}/${ref.avg_usd}/${ref.high_usd}`);
+  const exp = 6488 > ref.high_usd ? "above_band" : 6488 < ref.low_usd ? "below_band" : "within_band";
+  assert(b.verdict === exp && exp === "above_band", `OR implant bundle 6488 → ${exp}`);
+  assert(sc.totals.above_band.includes("bundle:implant") && sc.totals.not_covered.length === 0, "bundle verdict in totals, bundle lines not reported as not_covered");
+  assert(sc.lines.every((l) => l.status === "bundle_line") && !/":-?\d/.test(JSON.stringify(sc.lines.map(({ input, ...r }) => r))), "bundle lines carry no per-line figure");
+  const city = JSON.parse(fs.readFileSync(path.join(root, "dist", "data", "cities.json"), "utf8")).states.find((s) => s.code === "OR").cities.find((c) => c.name === "Portland");
+  assert(sc.city_reference.status === "ok" && sc.city_reference.avg_usd === city.costs.Implants.avg && sc.city_reference.source_url, `Portland OR city implant average = ${city.costs.Implants.avg}`);
+  const nocity = await call("benchmark_treatment_plan", { state: "OR", city: "Nowhereville", lines: [{ code: "D6010" }] });
+  assert(nocity.city_reference.status === "no_source_at_this_level" && !("avg_usd" in nocity.city_reference), "unknown city → no figure");
+
+  const solo = await call("benchmark_treatment_plan", { state: "OR", lines: [{ code: "D6010", quoted_usd: 2926 }] });
+  const s = solo.bundles.find((x) => x.bundle === "implant");
+  assert(s.status === "partial_quote" && s.verdict === "none" && s.missing.length === 2 && /D6010/.test(s.band_includes), "D6010 alone → partial_quote with what the band includes");
+  assert(!solo.totals.above_band.length && !solo.totals.within_band.length, "partial quote → no verdict in totals");
+
+  const arch = await call("benchmark_treatment_plan", { state: "OR", lines: [{ code: "D5110", quoted_usd: 1500 }] });
+  const d = arch.bundles.find((x) => x.bundle === "dentures");
+  assert(d.status === "no_per_arch_band" && d.verdict === "none" && /per-arch band/.test(d.reason), "D5110 alone → no per-arch band");
+  const part = await call("benchmark_treatment_plan", { state: "OR", lines: [{ code: "D5213", quoted_usd: 1500 }] });
+  assert(part.bundles.find((x) => x.bundle === "dentures").status === "no_per_arch_band", "partial denture D5213 → no per-arch band");
+  const full = await call("benchmark_treatment_plan", { state: "OR", lines: [{ code: "D5110", quoted_usd: 1000 }, { code: "D5120", quoted_usd: 1000 }] });
+  const f = full.bundles.find((x) => x.bundle === "dentures");
+  const dref = STATES.OR.procedures.dentures;
+  const dexp = 2000 > dref.high_usd ? "above_band" : 2000 < dref.low_usd ? "below_band" : "within_band";
+  assert(f.status === "complete" && f.quote.bundle_total_usd === 2000 && f.verdict === dexp, `OR D5110 + D5120 = 2000 → ${dexp}`);
+
+  const ven = await call("benchmark_treatment_plan", { state: "OR", lines: [{ code: "D2962", qty: 2, quoted_usd: 3000 }] });
+  const v = ven.bundles.find((x) => x.bundle === "veneer");
+  assert(v.status === "complete" && v.quote.per_unit_usd === 1500 && v.cash_band.procedure_id === "veneer", "D2962 x2 → per-tooth veneer comparison");
+  const a4 = await call("benchmark_treatment_plan", { state: "OR", lines: [{ code: "D6114", quoted_usd: 20000 }, { code: "D6010", qty: 4, quoted_usd: 8000 }] });
+  const a = a4.bundles.find((x) => x.bundle === "allon4");
+  assert(a.status === "complete" && a.quote.bundle_total_usd === 28000 && a.quote.units === 1 && !a4.bundles.some((x) => x.bundle === "implant"), "D6114 + D6010 x4 → one All-on-4 arch, no single-implant bundle");
+
+  const q = await call("dental_cost_by_state", { procedure: "implant", state: "OR", quoted_usd: 6488 });
+  assert(q.quotePosition?.verdict === "above_band" && q.quotePosition.basis === "user_input", "dental_cost_by_state quoted_usd 6488 OR implant → above_band");
+  const noq = await call("dental_cost_by_state", { procedure: "implant", state: "OR" });
+  assert(!("quotePosition" in noq), "no quoted_usd → no quotePosition");
+}
+
 await client.close();
 console.log(failures ? `\n${failures} golden check(s) failed.` : "\nAll golden checks passed.");
 process.exit(failures ? 1 : 0);
