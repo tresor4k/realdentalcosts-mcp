@@ -44,7 +44,8 @@
     "test": "npm run build && node test/smoke.mjs && node test/golden.mjs && node test/sources.mjs && node test/api-parity.mjs && node --test test/descriptions.test.mjs",
     "sync-data": "node scripts/sync-data.mjs",
     "start": "node dist/index.js",
-    "test:http": "npm run build && node test/http-smoke.mjs"
+    "test:http": "npm run build && node test/http-smoke.mjs",
+    "package:submission": "node scripts/package-submission.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
