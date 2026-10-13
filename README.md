@@ -52,6 +52,23 @@ Add to `.cursor/mcp.json`:
 Restart your client after saving. The server runs entirely offline over
 stdio — no API key, no network calls, no telemetry.
 
+### Run with Docker
+
+The image [`tresor4k/realdentalcosts-mcp`](https://hub.docker.com/r/tresor4k/realdentalcosts-mcp)
+(`linux/amd64`, `linux/arm64`, non-root user) runs the same stdio server with
+the data bundled:
+
+```json
+{
+  "mcpServers": {
+    "realdentalcosts": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "tresor4k/realdentalcosts-mcp:latest"]
+    }
+  }
+}
+```
+
 ## Tools
 
 ### `dental_cost_by_state`

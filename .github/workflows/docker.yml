@@ -1,0 +1,69 @@
+# Tests on every push; the Docker Hub image is pushed only on a v* tag (credentials in repository secrets).
+name: docker
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+
+  image:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: docker.io/tresor4k/realdentalcosts-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then v="${GITHUB_REF_NAME#v}"; else v="$(node -p 'require("./package.json").version')-dev"; fi
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (amd64, local) for the smoke test
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          platforms: linux/amd64
+          build-args: VERSION=${{ env.VERSION }}
+          tags: realdentalcosts-mcp:smoke
+      - name: Smoke test (non-root uid, initialize + tools/list = 14 tools)
+        run: |
+          set -euo pipefail
+          test "$(docker run --rm --entrypoint id realdentalcosts-mcp:smoke -u)" = "1000"
+          out="$( { printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci-smoke","version":"0"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'; sleep 5; } \
+            | timeout 60 docker run -i --rm realdentalcosts-mcp:smoke )"
+          echo "$out" | jq -s -e 'map(select(.id==1))[0].result.serverInfo.name'
+          n="$(echo "$out" | jq -s 'map(select(.id==2))[0].result.tools | length')"
+          echo "tools: $n"
+          test "$n" = "14"
+      - if: startsWith(github.ref, 'refs/tags/v')
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build (amd64 + arm64), push on tag only
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          build-args: VERSION=${{ env.VERSION }}
+          tags: |
+            ${{ env.IMAGE }}:${{ env.VERSION }}
+            ${{ env.IMAGE }}:latest
