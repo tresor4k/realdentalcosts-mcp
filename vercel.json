@@ -2,7 +2,7 @@
   "framework": null,
   "outputDirectory": "public",
   "buildCommand": "npm run build",
-  "cleanUrls": true,
+  "cleanUrls": false,
   "functions": {
     "api/mcp.ts": {
       "includeFiles": "dist/**"
@@ -16,6 +16,22 @@
     {
       "source": "/claude",
       "destination": "/api/mcp?variant=claude"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms.html"
+    },
+    {
+      "source": "/support",
+      "destination": "/support.html"
+    },
+    {
+      "source": "/docs",
+      "destination": "/docs.html"
     }
   ],
   "headers": [
