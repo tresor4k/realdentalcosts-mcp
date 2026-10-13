@@ -117,7 +117,7 @@ ${BRIDGE}
  * medicaid_adult_dental_rules, medicaid_paid_by_code, low_cost_dental_options).
  * Self-contained, textContent only (no innerHTML from data), no network calls.
  */
-export const PLAN_WIDGET_URI = "ui://realdentalcosts/plan-card-v2.html";
+export const PLAN_WIDGET_URI = "ui://realdentalcosts/plan-card-v3.html";
 
 export const PLAN_WIDGET_HTML = `<!doctype html>
 <html lang="en">
@@ -205,10 +205,32 @@ ${BRIDGE}
       r.appendChild(el("td", null, (i.code || i.procedure) + (i.qty > 1 ? " ×" + i.qty : "") + (l.label ? " — " + l.label : "")));
       r.appendChild(el("td", null, usd(i.quoted_usd)));
       if (l.status === "not_covered") { var td = el("td", "warn", l.message); td.colSpan = 3; r.appendChild(td); }
+      else if (l.status === "bundle_line") { var tb = el("td", "note", "priced in bundle: " + String(l.bundle || "").replace(/_/g, " ")); tb.colSpan = 3; r.appendChild(tb); }
       else { r.appendChild(bandCell(l.cash_band)); r.appendChild(paidCell(l.medicaid_paid)); r.appendChild(feeCell(l.fee_schedule)); }
       var v = verdict(l); r.appendChild(el("td", /above/.test(v) ? "warn" : /within/.test(v) ? "ok" : null, v));
       tbl.appendChild(r);
     });
+    (d.bundles || []).forEach(function (b) {
+      var r = el("tr"), q = b.quote, x = pickOk(b.cash_band);
+      r.appendChild(el("td", null, "Bundle " + b.bundle.replace(/_/g, " ") + " (" + b.codes.join(" + ") + ")" + (x ? " — " + x.label : "")));
+      r.appendChild(el("td", null, q ? usd(q.bundle_total_usd) + (q.units > 1 ? " (" + usd(q.per_unit_usd) + " ×" + q.units + ")" : "") : "—"));
+      if (b.status === "complete" || b.status === "partial_quote") r.appendChild(bandCell(b.cash_band)); else r.appendChild(el("td", "warn", "no band"));
+      var tn = el("td", "note", b.status === "complete" ? b.band_includes : b.reason + (b.missing ? " Missing: " + b.missing.join("; ") + "." : "")); tn.colSpan = 2; r.appendChild(tn);
+      var bv = b.status === "complete" ? b.verdict.replace(/_/g, " ") : b.status.replace(/_/g, " ");
+      r.appendChild(el("td", /above/.test(bv) ? "warn" : /within/.test(bv) ? "ok" : null, bv));
+      tbl.appendChild(r);
+    });
+    var cr = d.city_reference;
+    if (cr) {
+      var rc = el("tr");
+      rc.appendChild(el("td", null, "City reference — " + cr.city + (cr.label ? " — " + cr.label : "")));
+      rc.appendChild(el("td", null, "—"));
+      var tc = el("td", cr.status === "ok" ? null : "warn", cr.status === "ok" ? "avg " + usd(cr.avg_usd) + (cr.clinics != null ? " · " + cr.clinics + " clinics" : "") : cr.reason);
+      if (cr.status === "ok") tc.appendChild(badge("observed avg"));
+      tc.colSpan = 3; rc.appendChild(tc);
+      rc.appendChild(el("td", "note", cr.status === "ok" ? cr.note : "state band applies"));
+      tbl.appendChild(rc);
+    }
     root.appendChild(tbl);
     var t = d.totals;
     root.appendChild(el("p", "note", "Quoted total " + usd(t.quoted_total_usd) + " · " + t.lines_quoted + "/" + t.lines_total + " lines quoted" + (t.above_band.length ? " · above band: " + t.above_band.join(", ") : "")));

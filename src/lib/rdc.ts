@@ -304,10 +304,22 @@ const LEVEL_MAP: Record<string, string> = { comprehensive: "extensive" };
  * with the SUM of the lines, and only when every group is on the plan (same quantity in each group).
  * Labels are plain-language descriptions, not ADA descriptors.
  */
-const CDT_BUNDLES: Record<string, { groups: string[][]; extra?: string[]; partial?: string[]; includes: string }> = {
+const IMPLANT_CROWNS = ["D6058", "D6059", "D6060", "D6061", "D6062", "D6063", "D6064", "D6065", "D6066", "D6067", "D6082", "D6083", "D6084", "D6086", "D6087", "D6088", "D6094", "D6097"];
+const IMPLANT_BRIDGE = ["D6068", "D6069", "D6070", "D6071", "D6072", "D6073", "D6074", "D6075", "D6076", "D6077", "D6078", "D6079", "D6098", "D6099", "D6120", "D6121", "D6122", "D6123", "D6194", "D6195"];
+const CDT_BUNDLES: Record<string, { groups: string[][]; extra?: string[]; partial?: string[]; includes: string; noBand?: string }> = {
   implant: {
-    groups: [["D6010"], ["D6056", "D6057"], ["D6058", "D6065", "D6066", "D6067"]],
-    includes: "The single-implant band covers the whole tooth: implant body placement (D6010) + abutment (D6056 or D6057) + crown on the implant (D6058, D6065, D6066 or D6067).",
+    groups: [["D6010"], ["D6056", "D6057"], IMPLANT_CROWNS],
+    includes: "The single-implant band covers the whole tooth: implant body placement (D6010) + abutment (D6056 or D6057) + one crown on the implant (D6058-D6067, D6082-D6084, D6086-D6088, D6094 or D6097).",
+  },
+  implant_bridge: {
+    groups: [IMPLANT_BRIDGE],
+    includes: "The single-implant band prices one tooth (implant + abutment + one crown), not a bridge or a multi-tooth prosthesis on implants.",
+    noBand: "No Real Dental Costs band covers a bridge or multi-tooth fixed prosthesis on implants: no verdict for these lines or for the implant lines quoted with them.",
+  },
+  implant_interim_crown: {
+    groups: [["D6085"]],
+    includes: "The single-implant band prices the final crown, not a temporary one.",
+    noBand: "No Real Dental Costs band covers a temporary crown on an implant: no verdict for this line.",
   },
   dentures: {
     groups: [["D5110"], ["D5120"]],
@@ -329,6 +341,22 @@ const BUNDLE_LABEL: Record<string, string> = {
   D6065: "implant-supported ceramic crown",
   D6066: "implant-supported crown, porcelain fused to metal",
   D6067: "implant-supported crown, metal",
+  D6059: "abutment-supported crown, porcelain fused to high-noble metal",
+  D6060: "abutment-supported crown, porcelain fused to base metal",
+  D6061: "abutment-supported crown, porcelain fused to noble metal",
+  D6062: "abutment-supported crown, high-noble metal",
+  D6063: "abutment-supported crown, base metal",
+  D6064: "abutment-supported crown, noble metal",
+  D6082: "implant-supported crown, porcelain fused to base metal",
+  D6083: "implant-supported crown, porcelain fused to noble metal",
+  D6084: "implant-supported crown, porcelain fused to titanium",
+  D6086: "implant-supported crown, base metal",
+  D6087: "implant-supported crown, noble metal",
+  D6088: "implant-supported crown, titanium",
+  D6094: "abutment-supported crown, titanium",
+  D6097: "abutment-supported crown, porcelain fused to titanium",
+  D6085: "temporary crown on an implant",
+  ...Object.fromEntries(IMPLANT_BRIDGE.map((c) => [c, "part of a bridge or multi-tooth fixed prosthesis on implants"])),
   D2962: "porcelain veneer",
   D6114: "full-arch fixed denture on implants, upper",
   D6115: "full-arch fixed denture on implants, lower",
@@ -350,9 +378,15 @@ function bundles(st: string, lines: PlanLine[]): Any[] {
     const partial = coded.filter((l) => b.partial?.includes(l.code));
     if (!inGroups.length && !partial.length) continue;
     if (id === "implant" && coded.some((l) => CDT_BUNDLES.allon4.groups[0].includes(l.code))) continue; // counted per arch
+    // implant + abutment lines quoted for a bridge, with no single crown: the bridge entry carries the status
+    if (id === "implant" && coded.some((l) => IMPLANT_BRIDGE.includes(l.code)) && !coded.some((l) => IMPLANT_CROWNS.includes(l.code))) continue;
     const qtys = b.groups.map((g) => inGroups.filter((l) => g.includes(l.code)).reduce((n, l) => n + l.qty, 0));
     const missing = b.groups.filter((_, i) => !qtys[i]).map((g) => g.join(" or "));
     const base: Any = { bundle: id, codes: [...inGroups, ...partial].map((l) => l.code), band_includes: b.includes };
+    if (b.noBand) {
+      out.push({ ...base, status: "no_band", verdict: "none", reason: b.noBand });
+      continue;
+    }
     if (id === "dentures" && (missing.length || partial.length)) {
       out.push({ ...base, status: "no_per_arch_band", verdict: "none", reason: "No per-arch band published: the dentures band is a full set (both arches), so a single arch or a partial denture gets no verdict." });
       continue;
@@ -626,6 +660,7 @@ export interface PlanLine {
 export function benchmarkTreatmentPlan(st: string, lines: PlanLine[], coverage: string, lang: Lang, city?: string): Any {
   const d = D();
   const bundleOf = (code: string) => Object.keys(CDT_BUNDLES).find((id) => CDT_BUNDLES[id].groups.flat().includes(code));
+  const bundleOut = bundles(st, lines);
   const outLines = lines.map((ln) => {
     const qty = ln.qty ?? 1;
     const input = {
@@ -644,7 +679,11 @@ export function benchmarkTreatmentPlan(st: string, lines: PlanLine[], coverage: 
           input,
           status: "bundle_line",
           label: BUNDLE_LABEL[code],
-          bundle: lines.some((l) => /^D611[45]$/i.test(l.code ?? "")) && CDT_BUNDLES.allon4.extra?.includes(code) ? "allon4" : bundleOf(code),
+          bundle: lines.some((l) => /^D611[45]$/i.test(l.code ?? "")) && CDT_BUNDLES.allon4.extra?.includes(code)
+            ? "allon4"
+            : bundleOf(code) === "implant" && !bundleOut.some((b) => b.bundle === "implant") && bundleOut.some((b) => b.bundle === "implant_bridge")
+              ? "implant_bridge"
+              : bundleOf(code),
           message: "Priced as part of a bundle (see bundles): Real Dental Costs publishes no per-line figure for this code.",
         };
       if (!c) return { input, status: "not_covered", message: T.notCovered[lang] };
@@ -683,7 +722,6 @@ export function benchmarkTreatmentPlan(st: string, lines: PlanLine[], coverage: 
   const quoted = lines.filter((l) => l.quoted_usd != null);
   const verdictOf = (l: Any) => l.cash_band?.position?.verdict ?? l.cash_band?.next_level?.position?.vs_national;
   const ref = (l: Any) => l.input.code ?? l.input.procedure;
-  const bundleOut = bundles(st, lines);
   const bref = (b: Any) => `bundle:${b.bundle}`;
   const result: Any = {
     tool: "benchmark_treatment_plan",

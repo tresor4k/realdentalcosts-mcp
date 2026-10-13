@@ -106,7 +106,7 @@ try {
   assert(html.includes("ui/notifications/tool-result") && html.includes("window.openai") && !/src=["']https?:/i.test(html), "widget HTML is self-contained, MCP Apps bridge + openai alias");
   assert(read.result?.contents?.[0]?._meta?.ui?.domain === "https://mcp.realdentalcosts.com", "/mcp widget carries _meta.ui.domain = https://mcp.realdentalcosts.com");
 
-  for (const old of ["ui://widget/price-card.html", "ui://widget/plan-card.html", "ui://realdentalcosts/price-card-v1.html", "ui://realdentalcosts/plan-card-v1.html"]) {
+  for (const old of ["ui://widget/price-card.html", "ui://widget/plan-card.html", "ui://realdentalcosts/price-card-v1.html", "ui://realdentalcosts/plan-card-v1.html", "ui://realdentalcosts/plan-card-v2.html"]) {
     const r = await rpc("resources/read", { uri: old });
     assert(r.result?.contents?.[0]?.uri === old && r.result.contents[0].text.includes("<html"), `earlier widget URI still served: ${old}`);
   }

@@ -224,6 +224,18 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
   const a = a4.bundles.find((x) => x.bundle === "allon4");
   assert(a.status === "complete" && a.quote.bundle_total_usd === 28000 && a.quote.units === 1 && !a4.bundles.some((x) => x.bundle === "implant"), "D6114 + D6010 x4 → one All-on-4 arch, no single-implant bundle");
 
+  // Lot 1b (13/10): every single crown on an implant closes the implant bundle; bridges and temporary crowns get no band
+  const pfm = await call("benchmark_treatment_plan", { state: "OR", lines: [{ code: "D6010", quoted_usd: 2926 }, { code: "D6057", quoted_usd: 1331 }, { code: "D6059", quoted_usd: 2231 }] });
+  const pb = pfm.bundles.find((x) => x.bundle === "implant");
+  assert(pb?.status === "complete" && pb.quote.bundle_total_usd === 6488 && pb.cash_band.label === "Single dental implant (complete)" && pb.verdict === exp, "D6010 + D6057 + D6059 → complete single-implant bundle");
+  assert(pfm.lines.every((l) => l.status === "bundle_line" && l.bundle === "implant") && pfm.totals.not_covered.length === 0, "D6059 is a bundle line, not not_covered");
+  const br = await call("benchmark_treatment_plan", { state: "OR", lines: [{ code: "D6010", qty: 2, quoted_usd: 5000 }, { code: "D6057", qty: 2, quoted_usd: 2600 }, { code: "D6068", qty: 2, quoted_usd: 3000 }] });
+  const bb = br.bundles.find((x) => x.bundle === "implant_bridge");
+  assert(bb?.status === "no_band" && bb.verdict === "none" && !("cash_band" in bb) && !br.bundles.some((x) => x.bundle === "implant"), "bridge D6068 → no_band, no single-implant partial_quote");
+  assert(br.lines.every((l) => l.status === "bundle_line" && l.bundle === "implant_bridge") && !br.totals.above_band.length && !br.totals.within_band.length, "bridge plan → no verdict anywhere");
+  const tmp = await call("benchmark_treatment_plan", { state: "OR", lines: [{ code: "D6085", quoted_usd: 400 }] });
+  assert(tmp.bundles.find((x) => x.bundle === "implant_interim_crown")?.status === "no_band" && tmp.totals.not_covered.length === 0, "temporary implant crown D6085 → no_band");
+
   const q = await call("dental_cost_by_state", { procedure: "implant", state: "OR", quoted_usd: 6488 });
   assert(q.quotePosition?.verdict === "above_band" && q.quotePosition.basis === "user_input", "dental_cost_by_state quoted_usd 6488 OR implant → above_band");
   const noq = await call("dental_cost_by_state", { procedure: "implant", state: "OR" });
