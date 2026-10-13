@@ -2,20 +2,29 @@
 
 All notable changes to this project are documented here.
 
-## [Unreleased] - lot C2 (2026-10-10, not deployed)
+## [0.3.1] - 2026-10-13
+
+- Remote server at `https://mcp.realdentalcosts.com/mcp` (and `/claude`), listed in the official MCP Registry as 0.3.1.
+- `benchmark_treatment_plan`: CDT bundles compared with the site's complete bands — single implant (D6010 + D6056/D6057 + one crown on the implant: D6058-D6067, D6082-D6084, D6086-D6088, D6094, D6097), full dentures (D5110 + D5120), veneer (D2962), All-on-4 per arch (D6114/D6115); a verdict only when the bundle is complete, otherwise `partial_quote`; implant bridges and D6085 return `no_band`. Optional `city` reference.
+- `dental_cost_by_state`: optional `quoted_usd` returns the quote's position in the state band.
+- Plan card widget `plan-card-v3` shows bundles and the city reference (`plan-card-v2` still served).
+- Docker image `tresor4k/realdentalcosts-mcp` (stdio, linux/amd64 + linux/arm64).
+- The npm package stays at 0.2.0 (4 tools) for now.
+
+## [0.3.0] - lot C2 (2026-10-10)
 
 - `insurance_out_of_pocket`: the user's own plan figures (deductible left, annual maximum left, coinsurance per line or per user-named class; `private` or `medicare_advantage`) applied to the state cash band, low / average / high, formula written out, badge `estimated`; a missing parameter leaves the line uncomputed (no default deductible, maximum, class or percentage; no insurer name).
 - `medicare_dental_check`: Original Medicare's statutory dental exclusion (SSA 1862(a)(12), 42 CFR 411.15(i), medicare.gov), verbatim quotes <= 300 characters re-read live on 2026-10-10 (`data/medicare-dental-exclusion-2026.json`); 2027 Medicare Advantage plans `not_yet_tracked`, hand-off to `insurance_out_of_pocket`.
 - `dental_program_changes`: Texas rate change of 2026-09-01 (47 codes; 3 rows whose age range is implausible in the source extract are flagged, not parsed), fee-schedule effective dates, adult cap effective dates stated in the caps table; filters by state and period; untracked states return `not_yet_tracked`, never "no change".
 - `scripts/sync-data.mjs` writes `programs.json` (sha256 in the manifest).
 
-## [Unreleased] - lot C1 (2026-10-10, not deployed)
+## [0.3.0] - lot C1 (2026-10-10)
 
 - 4 sourced data tools: `compare_states` (2-5 states × 1 procedure, rank among 51, gap to the national mean), `us_dental_spending_stats` (MEPS 2023 + 2024 cross-sections and the paired 2023-2024 change), `canada_dental_cost_by_province` (CSV under DOI 10.5281/zenodo.20744781, 10 provinces, territories `no_source_at_this_level`), `cdcp_coverage_check` (income tier, coverage matrix, `estimated` co-pay; income + province only).
 - Canada rows hit by open data-quality issues E-081, E-086, E-087, E-090, E-094 are withheld at sync time (`data_quality: "under_review"`, no value).
 - `scripts/sync-data.mjs` writes `meps.json` and `canada.json` (sha256 in the manifest); server instructions mention Canada.
 
-## [Unreleased] - remote server, lot A (2026-10-10, not deployed)
+## [0.3.0] - remote server, lot A (2026-10-10)
 
 - Remote endpoints `/mcp` (ChatGPT and other clients, widgets with `_meta.ui.domain` = `https://mcp.realdentalcosts.com`) and `/claude` (no `ui.domain`); links carry `utm_source=chatgpt`, `claude`, or `mcp` (stdio).
 - `normalizeHeaders`: `Accept: application/json` alone and unknown `MCP-Protocol-Version` headers are served (200).

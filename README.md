@@ -19,6 +19,8 @@ thin air.
 
 No installation needed — run directly with `npx`.
 
+> The npm package is still version 0.2.0 (4 tools). The remote server (`https://mcp.realdentalcosts.com/mcp`) and the Docker image below carry all 14 tools.
+
 ### Claude Desktop / Claude Code
 
 Add to your MCP config (`claude_desktop_config.json` or `.mcp.json`):

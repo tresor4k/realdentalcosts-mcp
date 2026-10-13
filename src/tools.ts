@@ -206,7 +206,7 @@ const server = new McpServer(
   {
     name: "realdentalcosts-mcp",
     title: "Real Dental Costs",
-    version: "0.2.0",
+    version: "0.3.1",
     websiteUrl: `${SITE_ORIGIN}/`,
   },
   { instructions: INSTRUCTIONS },
