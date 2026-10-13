@@ -7,7 +7,7 @@
     "url": "https://github.com/tresor4k/realdentalcosts-mcp",
     "source": "github"
   },
-  "version": "0.3.0",
+  "version": "0.3.1",
   "websiteUrl": "https://realdentalcosts.com",
   "packages": [
     {
@@ -22,7 +22,7 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://realdentalcosts-mcp.vercel.app/mcp"
+      "url": "https://mcp.realdentalcosts.com/mcp"
     }
   ]
 }
