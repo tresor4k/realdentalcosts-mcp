@@ -113,11 +113,11 @@ ${BRIDGE}
 `;
 
 /**
- * "Plan card" widget for the treatment-plan tools (benchmark_treatment_plan,
- * medicaid_adult_dental_rules, medicaid_paid_by_code, low_cost_dental_options).
+ * "Plan card" widget for the 11 sourced-figure tools (treatment plan, Medicaid, low-cost options, states side by side,
+ * MEPS, Canada, CDCP, out-of-pocket, Medicare, program changes): each one renders its values, then its sources.
  * Self-contained, textContent only (no innerHTML from data), no network calls.
  */
-export const PLAN_WIDGET_URI = "ui://realdentalcosts/plan-card-v3.html";
+export const PLAN_WIDGET_URI = "ui://realdentalcosts/plan-card-v4.html";
 
 export const PLAN_WIDGET_HTML = `<!doctype html>
 <html lang="en">
@@ -272,6 +272,113 @@ ${BRIDGE}
     if (d.county) root.appendChild(el("p", "note", d.county.status === "ok" ? d.county.county + ": " + (d.county.dental_hpsa_designations || 0) + " HPSA designation(s)" + (d.county.dental_desert ? " · dental desert" : "") : "County not found: state level shown"));
     if (d.charity && d.charity.programs) root.appendChild(el("p", "note", "Charity: " + d.charity.programs.join(" · ")));
   }
+  function cad(n) { return typeof n === "number" ? "C$" + n.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "—"; }
+  function pct(n) { return typeof n === "number" ? (n > 0 ? "+" : "") + n + "%" : "—"; }
+  function pctv(n) { return typeof n === "number" ? n + "%" : "—"; }
+  function bn(n) { return typeof n === "number" ? "$" + n + " bn" : "—"; }
+  function words(s) { return String(s == null ? "—" : s).replace(/_/g, " "); }
+  function short(s, n) { s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  function table(head, rows, root) {
+    var tbl = el("table"), tr = el("tr");
+    head.forEach(function (h) { tr.appendChild(el("th", null, h)); });
+    tbl.appendChild(tr);
+    rows.forEach(function (cells) {
+      var r = el("tr");
+      cells.forEach(function (c) { r.appendChild(c && c.nodeType ? c : el("td", null, c == null ? "—" : String(c))); });
+      tbl.appendChild(r);
+    });
+    root.appendChild(tbl);
+  }
+  function compare(d, root) {
+    var rows = (d.states || []).map(function (s) {
+      var name = el("td", null, s.name);
+      if (s.badges && s.badges.avg_usd) name.appendChild(badge(s.badges.avg_usd + " avg"));
+      return [name, usd(s.low_usd), usd(s.avg_usd), usd(s.high_usd), s.rank_by_avg != null ? s.rank_by_avg + "/" + s.of_states : "—", pct(s.vs_national_avg_pct)];
+    });
+    var n = d.national;
+    if (n) rows.push([el("td", "note", "US mean of 51"), usd(n.low_usd), usd(n.avg_usd), usd(n.high_usd), "—", "—"]);
+    table(["State", "Low", "Average", "High", "Rank (1 = lowest avg)", "vs US avg"], rows, root);
+    if (d.procedure && d.procedure.basis_note) root.appendChild(el("p", "note", d.procedure.basis_note));
+  }
+  function quote(q, root) {
+    if (!q || !q.quote) return;
+    var p = el("p", "note", "“" + short(q.quote, 220) + "” — ");
+    p.appendChild(q.source_url ? link(q.source_url, q.source || q.source_url) : document.createTextNode(q.source || ""));
+    if (q.as_of) p.appendChild(document.createTextNode(" (" + q.as_of + ")"));
+    root.appendChild(p);
+  }
+  function medicare(d, root) {
+    var o = d.original_medicare, a = d.medicare_advantage;
+    if (o) {
+      root.appendChild(el("h3", null, "Original Medicare (Parts A and B)"));
+      root.appendChild(el("p", null, "Rule: " + words(o.rule) + (o.summary ? " — " + o.summary : "")));
+      quote(o.statute, root);
+      quote(o.regulation, root);
+      (o.medicare_gov || []).forEach(function (q) { quote(q, root); });
+    }
+    if (a) {
+      root.appendChild(el("h3", null, "Medicare Advantage"));
+      root.appendChild(el("p", a.status === "ok" ? null : "warn", "Status: " + words(a.status) + (a.scope ? " — " + a.scope : "")));
+      if (a.reason) root.appendChild(el("p", "note", a.reason));
+      quote(a.enrollment_period, root);
+      if (a.next_step && a.next_step.note) root.appendChild(el("p", "note", a.next_step.note));
+    }
+  }
+  function meps(d, root) {
+    var yrs = d.annual || [];
+    var rows = [["Spending per person (all payers)", "per_capita_expenditure_usd", usd], ["Mean spending per person with a visit", "mean_expenditure_per_person_with_visit_usd", usd], ["Median spending among spenders", "median_expenditure_among_spenders_usd", usd], ["Mean out-of-pocket among spenders", "mean_oop_among_spenders_usd", usd], ["Median out-of-pocket among spenders", "median_oop_among_spenders_usd", usd], ["Out-of-pocket share of spending", "oop_share_of_expenditure_pct", pctv], ["People with a dental visit", "pct_with_dental_visit", pctv], ["Total dental spending", "total_dental_expenditure_usd_billion", bn]];
+    table(["National (MEPS)"].concat(yrs.map(function (y) { return y.period; })), rows.map(function (r) {
+      return [r[0]].concat(yrs.map(function (y) { return r[2](y.figures && y.figures[r[1]]); }));
+    }), root);
+    var ch = d.paired_change_same_persons;
+    if (ch && ch.reading) root.appendChild(el("p", "note", "Same persons " + ch.period + ": " + ch.reading));
+    if (d.measure_note) root.appendChild(el("p", "note", d.measure_note));
+  }
+  function canada(d, root) {
+    table(["Procedure", "Amount", "Range", "Basis"], (d.fees || []).map(function (f) {
+      if (f.status !== "ok") return [f.label, el("td", "warn", f.status === "withheld" ? "withheld" + (f.issue ? " (" + f.issue + ")" : "") : words(f.status)), "—", "—"];
+      return [f.label, cad(f.amount_cad), f.min_cad != null && f.max_cad != null ? cad(f.min_cad) + "–" + cad(f.max_cad) : "—", el("td", null, null).appendChild(badge((f.badge || "") + (f.period ? " " + f.period : ""))).parentNode];
+    }), root);
+  }
+  function cdcp(d, root) {
+    var t = d.income_tier;
+    if (t) root.appendChild(el("p", t.eligible_by_income === false ? "warn" : null, "Income tier " + (t.band || t.id) + ": plan pays " + pctv(t.cdcp_share_pct) + ", co-pay " + pctv(t.copay_pct) + (t.eligible_by_income === false ? " · not eligible by income" : "")));
+    table(["Procedure", "Covered", "Pre-authorization"], (d.coverage || []).map(function (c) {
+      return [c.label, words(c.covered), c.preauth_required === "true" ? "required" : c.preauth_required === "false" ? "no" : words(c.preauth_required)];
+    }), root);
+    var e = d.estimate;
+    if (e) root.appendChild(el("p", e.status === "ok" ? "note" : "note warn", e.status === "ok"
+      ? "Estimated co-pay " + cad(e.estimated_copay_cad) + " on a provincial fee reference of " + cad(e.fee_reference_cad) + " (plan share " + cad(e.estimated_cdcp_share_cad) + "; estimate, the plan pays on its own grid)"
+      : words(e.status) + (e.reason ? ": " + e.reason : "")));
+  }
+  function oop(d, root) {
+    table(["Line", "Cash band", "You pay at low / avg / high (estimate)"], (d.lines || []).map(function (l) {
+      var i = l.input, e = l.estimate, name = (l.label || i.procedure) + (i.qty > 1 ? " ×" + i.qty : "") + (e && e.coinsurance_pct_used != null ? " · " + e.coinsurance_pct_used + "% coinsurance" : "");
+      if (l.status !== "ok" || !e) return [name, el("td", "warn", l.message || words(l.status)), el("td", "warn", (l.missing || []).join("; ") || "—")];
+      return [name, bandCell(l.cash_band), usd(e.at_low.you_pay_usd) + " / " + usd(e.at_avg.you_pay_usd) + " / " + usd(e.at_high.you_pay_usd)];
+    }), root);
+    var t = d.totals;
+    if (t && t.at_avg) {
+      var left = t.remaining_after && t.remaining_after.annual_maximum_usd;
+      root.appendChild(el("p", "note", "Total you pay (" + t.lines_computed + "/" + t.lines_total + " lines): " + usd(t.at_low.you_pay_usd) + " / " + usd(t.at_avg.you_pay_usd) + " / " + usd(t.at_high.you_pay_usd) + (left && left.at_avg != null ? " · annual maximum left at avg: " + usd(left.at_avg) : "")));
+    } else if (t && t.reason) root.appendChild(el("p", "note warn", t.reason));
+    if (d.formula) root.appendChild(el("p", "note", d.formula));
+  }
+  function changes(d, root) {
+    var list = d.changes || [], kinds = d.kinds || {}, max = 25;
+    if (!list.length) root.appendChild(el("p", "note warn", words(d.status) + (d.reason ? ": " + d.reason : "")));
+    else table(["Effective", "State", "Change", "Source"], list.slice(0, max).map(function (c) {
+      var txt = (kinds[c.kind] && kinds[c.kind].label) || words(c.kind), r = c.pct_change_range;
+      if (c.codes_changed != null) txt += " — " + c.codes_changed + " codes" + (r ? ", " + pct(r.min) + " to " + pct(r.max) : "") + (c.program ? " (" + c.program + ")" : "");
+      else if (c.kind === "adult_dental_cap_effective") txt += " — " + (c.cap_usd != null ? usd(c.cap_usd) + " a year" : words(c.cap_kind));
+      else if (c.schedule_scope) txt += " — scope " + words(c.schedule_scope);
+      var td = el("td");
+      if (c.source_url) td.appendChild(link(c.source_url, "source"));
+      return [c.effective_date, c.state, txt, td];
+    }), root);
+    if (list.length > max) root.appendChild(el("p", "note", (list.length - max) + " more changes in the tool result."));
+    if (d.not_yet_tracked) root.appendChild(el("p", "note", "Not yet tracked: " + d.not_yet_tracked));
+  }
   function notes(o) {
     var seen = {}, list = [];
     (function walk(x) {
@@ -303,11 +410,19 @@ ${BRIDGE}
     root.textContent = "";
     var titles = { benchmark_treatment_plan: "Treatment plan check", medicaid_adult_dental_rules: "Adult Medicaid dental rule", medicaid_paid_by_code: "Medicaid paid " + (d.code || ""), low_cost_dental_options: "Lower-cost dental options", compare_states: "States side by side", us_dental_spending_stats: "US dental spending (MEPS)", canada_dental_cost_by_province: "Dental costs by province", cdcp_coverage_check: "Canadian Dental Care Plan check", insurance_out_of_pocket: "Out-of-pocket estimate (your plan figures)", medicare_dental_check: "Medicare and dental care", dental_program_changes: "Dated dental program changes" };
     root.appendChild(el("h2", null, titles[d.tool] || "Real Dental Costs"));
-    root.appendChild(el("p", "sub", (d.state ? d.state.name : d.province ? d.province.name + ", Canada" : "United States") + (d.label ? " · " + d.label : "")));
+    var lbl = d.label || (d.procedure && d.procedure.label);
+    root.appendChild(el("p", "sub", (d.state ? d.state.name : d.province ? d.province.name + ", Canada" : d.tool === "compare_states" ? "US states" : "United States") + (lbl ? " · " + lbl : "")));
     if (d.tool === "benchmark_treatment_plan") plan(d, root);
     else if (d.tool === "medicaid_adult_dental_rules") rule(d, root);
     else if (d.tool === "medicaid_paid_by_code") paid(d, root);
     else if (d.tool === "low_cost_dental_options") options(d, root);
+    else if (d.tool === "compare_states") compare(d, root);
+    else if (d.tool === "medicare_dental_check") medicare(d, root);
+    else if (d.tool === "us_dental_spending_stats") meps(d, root);
+    else if (d.tool === "canada_dental_cost_by_province") canada(d, root);
+    else if (d.tool === "cdcp_coverage_check") cdcp(d, root);
+    else if (d.tool === "insurance_out_of_pocket") oop(d, root);
+    else if (d.tool === "dental_program_changes") changes(d, root);
     var src = d.source_notes || notes(d);
     if (src.length) {
       root.appendChild(el("h3", null, "Sources"));
