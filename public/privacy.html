@@ -6,16 +6,39 @@
 <p>Last updated: 2026-10-13. Real Dental Costs (<a href="https://realdentalcosts.com/">realdentalcosts.com</a>) is published by Trésor Kaya, entrepreneur individuel (EI), trading as Les Créavores. SIREN: 521 464 644. Address: 1 rue du Sculpteur Bussière, 57130 Ars-sur-Moselle, France. This policy covers the Real Dental Costs plugin and connector for AI assistants (ChatGPT, Claude and other clients of the Model Context Protocol), served from <code>https://mcp.realdentalcosts.com</code>.</p>
 
 <h2>Personal data</h2>
-<p>None is collected. The tools never ask for a name, age, date of birth, ZIP code, address, insurer or plan name, member ID, phone number or email address, and they have no account, login, cookie or tracker. If you paste a treatment plan, the CDT procedure codes, quantities and quoted amounts it contains are processed in memory to build the answer and are not stored (see below).</p>
+<p>The tools never ask for a name, age, date of birth, ZIP code, street address, insurer or plan name, member ID, phone number or email address, and they have no account, login, cookie or tracker. A few tools accept figures about your own situation (listed below, such as a quote, your plan's deductible or a Canadian family income); they are processed in memory to build the answer and are not stored.</p>
 
 <h2>What the server receives</h2>
-<p>Only the arguments of each tool call: a US state code, a city or county name, a procedure id or CDT code, quantities, quoted amounts in US dollars, a coverage category (none, adult Medicaid, private, Medicare Advantage, discount plan) and a language (en or es). They are used in memory to look up published figures, then discarded with the response. They are not saved, sold or shared.</p>
+<p>Only the arguments of each tool call, as sent by the AI assistant:</p>
+<ul>
+<li>Place: a US state or DC code, a city or county name, a Canadian province or territory code.</li>
+<li>Procedure: a procedure id or a CDT code, quantities.</li>
+<li>Prices you quote: quoted amounts in US dollars for each line of a treatment plan or for one procedure.</li>
+<li>Coverage: a coverage category (none, adult Medicaid, private, Medicare Advantage, discount plan, Original Medicare, not sure).</li>
+<li>Your own plan figures, only for the out-of-pocket estimate: deductible remaining, annual maximum remaining (or no annual maximum), coinsurance percentages per line or per service class, and whether the deductible applies.</li>
+<li>Canadian Dental Care Plan check only: the adjusted family net income in Canadian dollars, with the province and procedure.</li>
+<li>Program changes only: a start and end date for the period to list.</li>
+<li>A language: en or es.</li>
+</ul>
+<p>They are used in memory to look up published figures, then discarded with the response. The server's code does not write them to any log. They are not saved, sold or shared.</p>
 
 <h2>Usage counts</h2>
-<p>The server writes an aggregate count of calls per tool and per UTC day. It contains no tool argument, no IP address, no user agent and no other data about the person asking. The hosting provider keeps its own technical request logs under its terms.</p>
+<p>The server writes an aggregate count of calls per tool and per UTC day. It contains no tool argument, no IP address, no user agent and no other data about the person asking.</p>
+
+<h2>Technical logs kept by the host</h2>
+<p>The server runs on Vercel. To deliver and protect the service, Vercel records technical request data such as the IP address of the caller, the date and time, the path requested (<code>/mcp</code> or <code>/claude</code>) and the response status. Requests come from the servers of the AI assistant you use, so the IP address in these logs is normally that assistant's, not your device's. We use these logs only to keep the service running and to investigate errors or abuse. They are kept for the period Vercel applies to the account; we do not export or keep copies.</p>
+
+<h2>Recipients</h2>
+<p>Vercel Inc., 440 N Barranca Avenue #4133, Covina, CA 91723, United States, as host (<a href="https://vercel.com/legal/privacy-policy">Vercel's privacy policy</a>). We do not sell, rent or share the data with anyone else and we do not use it for advertising or profiling. The AI assistant that calls the tools handles your conversation under its own privacy policy.</p>
 
 <h2>Links</h2>
 <p>Answers link to pages of realdentalcosts.com with a <code>utm_source</code> tag naming the assistant (for example <code>chatgpt</code> or <code>claude</code>), so the site can count visits per assistant. Visiting the site is governed by the site's own privacy policy.</p>
+
+<h2>Your choices and rights</h2>
+<p>You can disable or remove the plugin in your assistant at any time. You may ask to access, correct or erase data about you, or object to its use, by writing to <a href="mailto:research@realdentalcosts.com">research@realdentalcosts.com</a>; as the server keeps no tool arguments, there is usually nothing tied to you to retrieve. You may also complain to the CNIL (<a href="https://www.cnil.fr/">cnil.fr</a>).</p>
+
+<h2>Changes</h2>
+<p>A change to this policy is published on this page with a new date.</p>
 
 <h2>Contact</h2>
 <p><a href="mailto:research@realdentalcosts.com">research@realdentalcosts.com</a></p>
