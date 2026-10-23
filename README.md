@@ -11,9 +11,9 @@ citable dataset instead: 12 common dental procedures, priced across all 51
 US states (including DC) and 200+ cities, plus a line-by-line treatment-plan
 checker built only on sourced, dated figures.
 
-Data comes from the **Real Dental Costs US Dental Cost Index 2026** — an
-openly published dataset (DOI below), not a scrape or an estimate pulled from
-thin air.
+Data comes from the **Real Dental Costs US Dental Cost Index 2026**: every
+figure carries its source, its period and whether it is observed or
+estimated (details and licensing below).
 
 ## Quick Start
 
@@ -154,8 +154,12 @@ static versioned endpoints, no key, CORS enabled, documented with an OpenAPI 3.1
 - One procedure across states: <https://realdentalcosts.com/api/v1/procedure/dental-implant.json>
 - OpenAPI 3.1 spec: <https://realdentalcosts.com/api/v1/openapi.json>
 
-License **CC BY 4.0** — attribution required: link to <https://realdentalcosts.com> or cite
-DOI [10.5281/zenodo.20531728](https://doi.org/10.5281/zenodo.20531728).
+Licensing depends on the figure. Real Dental Costs' own datasets are published on Zenodo under the
+license stated on each record (for example the implant series, DOI
+[10.5281/zenodo.20531728](https://doi.org/10.5281/zenodo.20531728)); attribution required: link to
+<https://realdentalcosts.com> or cite the DOI. State averages for crown, veneer, braces and dentures
+come from the ASQ360/CareCredit Average Procedural Cost Study 2023-2024: they remain the property of
+their publisher, are not covered by Real Dental Costs' license, and must be cited to that study.
 
 ## Data & methodology
 
