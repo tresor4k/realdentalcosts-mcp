@@ -15,6 +15,17 @@ Data comes from the **Real Dental Costs US Dental Cost Index 2026**: every
 figure carries its source, its period and whether it is observed or
 estimated (details and licensing below).
 
+> **Correction notice (October 25, 2026).** On realdentalcosts.com, the state
+> implant series was requalified as an *editorial estimate* (edition 2026.1,
+> not collected prices; state ranking validated against ASQ360, Spearman 0.945,
+> levels not verified), and the city implant prices and clinic counts were
+> withdrawn: they were written in an AI-assisted session and never collected.
+> Record: <https://realdentalcosts.com/en/data-corrections/>. This server is
+> frozen while a directory review is in progress, so it still returns those
+> figures and still labels the implant series `observed`: treat the implant
+> state band as an editorial estimate and the city figures as unsourced until
+> the next release.
+
 ## Quick Start
 
 No installation needed — run directly with `npx`.
@@ -87,10 +98,12 @@ procedure: "implant"   state: "CA"
 
 ### `dental_cost_by_city`
 
-Observed average single-implant cost and clinic count for a specific city
-(206 cities, open dataset DOI 10.5281/zenodo.20819438), with the parent
-state's implant band for context. Only the implant series is published at
-city level — per-city veneer/braces figures were retired in the source
+Single-implant figure and clinic count for a specific city (206 cities, open
+dataset DOI 10.5281/zenodo.20819438). **Withdrawn on October 25, 2026** (see
+the correction notice above): the figures were never collected, and the
+server still returns them only because it is frozen during a review. The
+response also gives the parent state's implant band for context. Only the
+implant series was published at city level — per-city veneer/braces figures were retired in the source
 site's July 2026 data-integrity work.
 
 ```
@@ -172,9 +185,11 @@ published by [Real Dental Costs](https://realdentalcosts.com):
 - Methodology: <https://realdentalcosts.com/en/methodology/>
 
 Every procedure carries a `basis` field. `observed` state averages are
-measured prices (implant = Real Dental Costs' own observed series;
-crown/veneer/braces/dentures = ASQ360/CareCredit Average Procedural Cost
-Study 2023-2024), with the low/high band around them modelled from national
+measured prices (crown/veneer/braces/dentures = ASQ360/CareCredit Average
+Procedural Cost Study 2023-2024; the implant series still reads `observed` in
+this frozen server but has been an editorial estimate, edition 2026.1, not
+collected prices, since October 25, 2026), with the low/high band around them
+modelled from national
 ratios. `estimated` procedures have no per-state source: the national figure
 is scaled by the state's Restorative Cost Index, which is valid only for
 restorative work (implant/crown/denture — it does not predict orthodontic or
