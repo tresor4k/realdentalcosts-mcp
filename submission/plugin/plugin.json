@@ -36,7 +36,7 @@
         "defaultPrompt": [
           "My dentist quoted D6010 $2,900, D6057 $1,300 and D6058 $2,200 in Portland, Oregon. Is that fair?",
           "Does Montana Medicaid have a yearly limit on adult dental work?",
-          "How much does a dental crown cost in Texas compared with California?"
+          "How much does a root canal cost in Texas compared with California?"
         ],
         "brandColor": "#033872",
         "composerIcon": "./assets/logo.png",
@@ -61,7 +61,7 @@
               "description": "The same procedure compared across two states.",
               "prompt": "Using Real Dental Costs: how much does a dental crown cost in Texas compared with California?",
               "tools_triggered": "compare_states",
-              "expected_behavior": "Gives Texas $955 to $2,130 with an average of $1,250 and California $1,780 to $3,970 with an average of $2,331, says the averages are observed and the band edges are modelled, and cites the source."
+              "expected_behavior": "Gives Texas $490 to $1,470 with an average of $1,080 and California $635 to $1,905 with an average of $1,395, says the figures are estimated, and cites the source."
             },
             {
               "description": "Medicare coverage of dental work, answered from the statute and medicare.gov.",

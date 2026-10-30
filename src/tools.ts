@@ -14,6 +14,9 @@ import {
   COMPARE_PROCEDURES,
   COMPARE_STATES,
   COMPARE_PRICES,
+  WITHHELD_SERIES,
+  WITHHELD_NOTE,
+  THIRD_PARTY_TERMS,
 } from "./lib/compare-data.js";
 import { nationalTriple, PROC_LABELS_ES } from "./lib/pricing.js";
 import { WIDGET_URI, WIDGET_MIME, WIDGET_HTML, PLAN_WIDGET_URI, PLAN_WIDGET_HTML } from "./widget.js";
@@ -57,8 +60,8 @@ const PROC_SLUGS: Record<string, string> = {
 /** Provenance notes per pricing basis (mirrors the upstream compare-data doc). */
 const BASIS_NOTES: Record<string, { en: string; es: string }> = {
   observed: {
-    en: "The state AVERAGE is a measured price (crown/veneer/braces/dentures = ASQ360/CareCredit Average Procedural Cost Study 2023-2024). The low/high band around it is modelled from national ratios, not an observed percentile.",
-    es: "El PROMEDIO estatal es un precio medido (corona/carilla/brackets/dentaduras = estudio ASQ360/CareCredit 2023-2024). La banda low/high alrededor es modelada a partir de ratios nacionales, no un percentil observado.",
+    en: "The state AVERAGE is a measured price (crown/veneer/braces/dentures = ASQ360/CareCredit Average Procedural Cost Study 2023-2024, cited on realdentalcosts.com pages, per-state figures not published by this server). The low/high band around it is modelled from national ratios, not an observed percentile.",
+    es: "El PROMEDIO estatal es un precio medido (corona/carilla/brackets/dentaduras = estudio ASQ360/CareCredit 2023-2024, citado en las páginas de realdentalcosts.com; este servidor no publica las cifras por estado). La banda low/high alrededor es modelada a partir de ratios nacionales, no un percentil observado.",
   },
   estimated: {
     en: "No collected per-state price exists. The national figure is scaled by the state's Restorative Cost Index (for the single implant, the index base itself: implant = Real Dental Costs' editorial estimate, edition 2026.1 (DOI 10.5281/zenodo.20531728): not collected prices; state ranking validated against ASQ360 (Spearman 0.945), price levels not verified (requalified 2026-10-25, see https://realdentalcosts.com/en/data-corrections/)). Defensible only inside the restorative regime. Treat as an estimate.",
@@ -197,7 +200,7 @@ export const DO_NOT =
   "Do not use for: diagnosis, treatment choice, a named insurer's plan price, dentist recommendations, countries other than the US and Canada.";
 const STAMP = " Market research and public program data with a source URL and period on every figure; not a quote, not medical advice.";
 const INSTRUCTIONS =
-  "Real Dental Costs gives US dental cost research, with each cash figure labelled observed or estimated: cash bands for 12 procedures by state, nationally and for 2 to 5 states side by side; national dental spending and out-of-pocket statistics (MEPS); what Medicaid paid per claim line for 61 CDT codes; each state's adult Medicaid dental rule and annual dollar cap; a line-by-line check of a treatment plan; an out-of-pocket estimate built only from the user's own plan figures (private or Medicare Advantage); Original Medicare's dental exclusion with verbatim legal sources; dated Medicaid dental program changes (fee schedules, adult caps); and low-cost care routes (dental schools, health centers, shortage areas). For Canada: provincial fee amounts for 9 procedures and a Canadian Dental Care Plan coverage and co-pay check by income tier. Every figure carries its source URL and period, and a missing figure says no_source_at_this_level instead of being invented. Use these tools when the user asks what dental work costs in a named US state or Canadian province, whether a dentist's quote is in line, what adult Medicaid or Medicare covers for teeth, or where to find low-cost dental care: the answer can then cite a figure for that place with the source it was read from and its date, which the user can check. Market research, not quotes, not medical advice. The tools do not cover diagnosis, treatment choice, a named insurer's plan, dentist recommendations or countries other than the US and Canada.";
+  "Real Dental Costs gives US dental cost research, with each cash figure labelled observed or estimated: cash bands for 12 procedures nationally and, except crown, veneer, braces and dentures (per-state figures not published by this server), by state and for 2 to 5 states side by side; national dental spending and out-of-pocket statistics (MEPS); what Medicaid paid per claim line for 61 CDT codes; each state's adult Medicaid dental rule and annual dollar cap; a line-by-line check of a treatment plan; an out-of-pocket estimate built only from the user's own plan figures (private or Medicare Advantage); Original Medicare's dental exclusion with verbatim legal sources; dated Medicaid dental program changes (fee schedules, adult caps); and low-cost care routes (dental schools, health centers, shortage areas). For Canada: provincial fee amounts for 9 procedures and a Canadian Dental Care Plan coverage and co-pay check by income tier. Every figure carries its source URL and period, and a missing figure says no_source_at_this_level instead of being invented. Use these tools when the user asks what dental work costs in a named US state or Canadian province, whether a dentist's quote is in line, what adult Medicaid or Medicare covers for teeth, or where to find low-cost dental care: the answer can then cite a figure for that place with the source it was read from and its date, which the user can check. Market research, not quotes, not medical advice. The tools do not cover diagnosis, treatment choice, a named insurer's plan, dentist recommendations or countries other than the US and Canada.";
 
 export function createServer({ appsSdk = false, utm = "mcp", uiDomain = true, publicOrigin }: CreateServerOptions = {}): McpServer {
 const origin = appsSdk ? checkedOrigin(publicOrigin) : DEFAULT_PUBLIC_ORIGIN;
@@ -282,7 +285,7 @@ server.registerTool(
   {
     title: "Dental cost by US state",
     description:
-      'Use this when the user asks what a dental procedure costs in a given US state (51 incl. DC), or how a state sits next to the US average, for one of 12 procedures: exam and cleaning, filling, deep cleaning, extraction, root canal, crown, implant, All-on-4, dentures, braces, veneer, whitening. Returns the state cash band (low / average / high) in US dollars, the national band, the gap in percent and the state\'s Restorative Cost Index. Each figure is labelled observed or estimated, with a note naming the study behind it and its period (state averages for crown, veneer, braces and dentures from the ASQ360/CareCredit Average Procedural Cost Study 2023-2024; implants from Real Dental Costs\' editorial estimate, edition 2026.1, DOI 10.5281/zenodo.20531728, not collected data, state ranking validated against ASQ360, levels not verified; other procedures scaled from the national figure and marked estimated), so the answer can say where the state number comes from and how old it is. Phrasings: "how much is a crown in Ohio without insurance", "what do people in Florida pay for a root canal", "¿cuánto cuesta un implante dental en Texas?", "costo de una limpieza dental en California". When the user already has an amount quoted by their dentist and asks whether it is normal, use benchmark_treatment_plan instead: it places the quoted amount against this band line by line. ' +
+      'Use this when the user asks what a dental procedure costs in a given US state (51 incl. DC), or how a state sits next to the US average, for one of 12 procedures: exam and cleaning, filling, deep cleaning, extraction, root canal, crown, implant, All-on-4, dentures, braces, veneer, whitening. Returns the state cash band (low / average / high) in US dollars, the national band, the gap in percent and the state\'s Restorative Cost Index. For crown, veneer, braces and dentures it returns no state figure: those per-state figures (ASQ360/CareCredit Average Procedural Cost Study 2023-2024) are cited on realdentalcosts.com pages but not licensed for redistribution, so the answer gives status no_source_at_this_level, the study link and the national band. Each figure is labelled observed or estimated, with a note naming the study behind it and its period (implants from Real Dental Costs\' editorial estimate, edition 2026.1, DOI 10.5281/zenodo.20531728, not collected data, state ranking validated against ASQ360, levels not verified; other procedures scaled from the national figure and marked estimated), so the answer can say where the state number comes from and how old it is. Phrasings: "how much is a filling in Ohio without insurance", "what do people in Florida pay for a root canal", "¿cuánto cuesta un implante dental en Texas?", "costo de una limpieza dental en California". When the user already has an amount quoted by their dentist and asks whether it is normal, use benchmark_treatment_plan instead: it places the quoted amount against this band line by line. ' +
       DO_NOT +
       STAMP,
     inputSchema: {
@@ -307,9 +310,38 @@ server.registerTool(
         `Unknown procedure or state. Valid procedures: ${PROCEDURE_IDS.join(", ")}. Valid states: ${STATE_CODES.join(", ")}.`,
       );
     }
-    const triple = COMPARE_PRICES[state][procedure];
-    const [low, avg, high] = triple;
     const [natLow, natAvg, natHigh] = nationalTriple(procedure);
+    if (WITHHELD_SERIES[procedure]) {
+      const nat = { low: Math.round(natLow), avg: Math.round(natAvg), high: Math.round(natHigh), currency: "USD" };
+      const withheldPayload = {
+        source: SOURCE,
+        reference_url: refUrl("/compare/", lang),
+        api_url: `${API_BASE}/state/${st.code.toLowerCase()}.json`,
+        procedure: { id: procedure, label: procedureLabel(procedure, lang), category: proc.cat, basis: proc.basis },
+        state: { code: st.code, name: st.name, restorativeCostIndex: st.index, indexNote: INDEX_NOTE[lang] },
+        status: "no_source_at_this_level",
+        geo: "state",
+        withheld: true,
+        withheld_note: WITHHELD_NOTE[lang],
+        source_url: THIRD_PARTY_TERMS.source_url,
+        nationalAverage: nat,
+        ...(quoted_usd != null
+          ? { quotePosition: { basis: "user_input", quoted_usd, ...bandPosition(quoted_usd, nat.low, nat.high), band: "national low-high (state figures withheld, edges modelled)" } }
+          : {}),
+        disclaimer: disclaimer(lang),
+      };
+      return jsonResult(withheldPayload, {
+        title: withheldPayload.procedure.label,
+        location: lang === "es" ? "Estados Unidos" : "United States",
+        low: nat.low,
+        avg: nat.avg,
+        high: nat.high,
+        avgLabel: lang === "es" ? "Promedio nacional" : "National average",
+        rangeNote: WITHHELD_NOTE[lang],
+        url: cardUrl(procedure, lang, st.slug),
+      });
+    }
+    const [low, avg, high] = COMPARE_PRICES[state][procedure];
     const payload = {
       source: SOURCE,
       reference_url: refUrl("/compare/", lang),
@@ -372,13 +404,17 @@ server.registerTool(
       return errorResult(`Unknown procedure "${procedure}". Valid: ${PROCEDURE_IDS.join(", ")}.`);
     }
     const [low, avg, high] = nationalTriple(procedure);
-    let cheapest = STATE_CODES[0];
-    let priciest = STATE_CODES[0];
-    for (const code of STATE_CODES) {
-      const a = COMPARE_PRICES[code][procedure][1];
-      if (a < COMPARE_PRICES[cheapest][procedure][1]) cheapest = code;
-      if (a > COMPARE_PRICES[priciest][procedure][1]) priciest = code;
-    }
+    // E-110: for a withheld series, only the 2 state averages API v1 keeps as citations.
+    const held = WITHHELD_SERIES[procedure];
+    let cheapest = held ? held.cheapest.code : STATE_CODES[0];
+    let priciest = held ? held.priciest.code : STATE_CODES[0];
+    const stateAvg = (code: string) => (held ? (code === held.cheapest.code ? held.cheapest.avg : held.priciest.avg) : COMPARE_PRICES[code][procedure][1]);
+    if (!held)
+      for (const code of STATE_CODES) {
+        const a = stateAvg(code);
+        if (a < stateAvg(cheapest)) cheapest = code;
+        if (a > stateAvg(priciest)) priciest = code;
+      }
     const hasStateVariation = proc.basis !== "national";
     const payload = {
       source: SOURCE,
@@ -402,12 +438,12 @@ server.registerTool(
             cheapestState: {
               code: cheapest,
               name: stateByCode.get(cheapest)?.name,
-              avg: COMPARE_PRICES[cheapest][procedure][1],
+              avg: stateAvg(cheapest),
             },
             priciestState: {
               code: priciest,
               name: stateByCode.get(priciest)?.name,
-              avg: COMPARE_PRICES[priciest][procedure][1],
+              avg: stateAvg(priciest),
             },
           }
         : {
@@ -416,6 +452,7 @@ server.registerTool(
                 ? "Sin variación estatal: no existe fuente estatal para este procedimiento estético, todos los estados llevan el rango nacional."
                 : "No state variation: no per-state source exists for this cosmetic procedure, every state carries the national range.",
           }),
+      ...(held ? { third_party_terms: { ...THIRD_PARTY_TERMS, fields: ["cheapestState.avg", "priciestState.avg"] } } : {}),
       disclaimer: disclaimer(lang),
     };
     return jsonResult(payload, {
@@ -445,7 +482,7 @@ server.registerTool(
   {
     title: "Check a dental treatment plan line by line",
     description:
-      'Use this when the user has a treatment plan or quote from a US dentist (CDT codes such as D2740, or procedure names, with quantities and quoted amounts) and wants to know where each line sits. For each line, returns the state cash band (observed or estimated badge) and where the quoted amount falls in it, what Medicaid paid per claim line (T-MSIS p25 / median / p75) and the official Medicaid fee schedule with its age scope (children_only or not_verified: context only), plus the state\'s adult Medicaid rule and numbered sources. quoted_usd is the line total as quoted. Codes billed as parts of one job are summed into a bundle and compared with its band only when the bundle is complete: implant (D6010 + D6056 or D6057 + one crown on the implant: D6058-D6067, D6082-D6084, D6086-D6088, D6094 or D6097), full dentures (D5110 + D5120), veneer (D2962), All-on-4 per arch (D6114 or D6115); a partial bundle returns partial_quote with what the band includes, and a single arch or partial denture gets no verdict; a bridge on implants (D6068-D6079, D6098, D6099, D6120-D6123, D6194, D6195) or a temporary implant crown (D6085) returns no_band. No city-level figure is published: passing city returns no_source_at_this_level and the state band applies. Phrasings: "my dentist wrote D2740 and D4341 x4 on the plan, is that in line for Arizona", "go through this dental estimate line by line", "¿es razonable este presupuesto dental en Nevada?", "revisa mi plan de tratamiento con códigos CDT".' +
+      'Use this when the user has a treatment plan or quote from a US dentist (CDT codes such as D2740, or procedure names, with quantities and quoted amounts) and wants to know where each line sits. For each line, returns the state cash band (observed or estimated badge) and where the quoted amount falls in it, what Medicaid paid per claim line (T-MSIS p25 / median / p75) and the official Medicaid fee schedule with its age scope (children_only or not_verified: context only), plus the state\'s adult Medicaid rule and numbered sources. quoted_usd is the line total as quoted. Codes billed as parts of one job are summed into a bundle and compared with its band only when the bundle is complete: implant (D6010 + D6056 or D6057 + one crown on the implant: D6058-D6067, D6082-D6084, D6086-D6088, D6094 or D6097), full dentures (D5110 + D5120), veneer (D2962), All-on-4 per arch (D6114 or D6115); a partial bundle returns partial_quote with what the band includes, and a single arch or partial denture gets no verdict; a bridge on implants (D6068-D6079, D6098, D6099, D6120-D6123, D6194, D6195) or a temporary implant crown (D6085) returns no_band. Crown, veneer, braces and dentures have no state band here (per-state figures not licensed for redistribution): those lines and bundles are placed against the national band. No city-level figure is published: passing city returns no_source_at_this_level and the state band applies. Phrasings: "my dentist wrote D2740 and D4341 x4 on the plan, is that in line for Arizona", "go through this dental estimate line by line", "¿es razonable este presupuesto dental en Nevada?", "revisa mi plan de tratamiento con códigos CDT".' +
       NOTE,
     inputSchema: {
       state: stateEnum,
@@ -558,7 +595,7 @@ server.registerTool(
   {
     title: "Dental cost in 2 to 5 US states side by side",
     description:
-      'Use this when the user names two to five US states and asks what one of the 12 procedures (exam and cleaning, filling, deep cleaning, extraction, root canal, crown, implant, All-on-4, dentures, braces, veneer, whitening) costs in each, or in which of them it costs less, for instance before a move or before travelling for care. Returns, for each state, the cash band (low / average / high) in US dollars with its basis badge (observed or estimated), its rank among the 51 state averages and its gap in percent to the national mean, plus the national band. Every row comes from the same series with its source and period (for crowns, the ASQ360/CareCredit Average Procedural Cost Study 2023-2024 state averages), so the states are lined up on one basis; cosmetic procedures carry no state variation. Phrasings: "line up implant costs in Texas, Florida and Arizona", "dentures in Ohio and Michigan side by side", "¿dónde sale más barato un implante, en Texas o en California?", "compara el costo de una corona en Nueva York y Nueva Jersey". ' +
+      'Use this when the user names two to five US states and asks what one of the 12 procedures (exam and cleaning, filling, deep cleaning, extraction, root canal, crown, implant, All-on-4, dentures, braces, veneer, whitening) costs in each, or in which of them it costs less, for instance before a move or before travelling for care. Returns, for each state, the cash band (low / average / high) in US dollars with its basis badge (observed or estimated), its rank among the 51 state averages and its gap in percent to the national mean, plus the national band. Every row comes from the same series with its source and period, so the states are lined up on one basis; cosmetic procedures carry no state variation. For crown, veneer, braces and dentures each state row returns no_source_at_this_level (ASQ360/CareCredit per-state figures, not licensed for redistribution) and only the national band is given. Phrasings: "line up implant costs in Texas, Florida and Arizona", "fillings in Ohio and Michigan side by side", "¿dónde sale más barato un implante, en Texas o en California?", "compara el costo de una endodoncia en Nueva York y Nueva Jersey". ' +
       DO_NOT +
       STAMP,
     inputSchema: {
@@ -654,7 +691,7 @@ server.registerTool(
   {
     title: "Out-of-pocket estimate from your own dental plan figures",
     description:
-      'Use this when the user has a private dental plan or a Medicare Advantage plan with dental benefits, knows its figures (deductible left, annual maximum left, coinsurance per procedure or per class), and asks what they would still pay for dental work in a US state. Every plan parameter comes from the user; the tool assumes none and names no insurer. Returns, per line, the state cash band (observed or estimated badge) and an estimated split (deductible, plan share, user share) on the low, average and high of the band, with the formula written out; a line missing a parameter is not computed and says which one. Phrasings: "my plan has 50 dollars of deductible left and 1,200 of annual max, coinsurance 50% on crowns, what would a crown in Ohio leave me to pay", "estimate my share for a root canal and a crown with my Medicare Advantage dental benefit in Florida", "¿cuánto me tocaría pagar por un implante con mi seguro dental si me quedan 800 del máximo anual?", "¿cuál sería mi parte de una endodoncia con coaseguro del 20% en Texas?". ' +
+      'Use this when the user has a private dental plan or a Medicare Advantage plan with dental benefits, knows its figures (deductible left, annual maximum left, coinsurance per procedure or per class), and asks what they would still pay for dental work in a US state. Every plan parameter comes from the user; the tool assumes none and names no insurer. Returns, per line, the state cash band (observed or estimated badge; the national band for crown, veneer, braces and dentures, whose per-state figures are not published here) and an estimated split (deductible, plan share, user share) on the low, average and high of the band, with the formula written out; a line missing a parameter is not computed and says which one. Phrasings: "my plan has 50 dollars of deductible left and 1,200 of annual max, coinsurance 50% on crowns, what would a crown in Ohio leave me to pay", "estimate my share for a root canal and a crown with my Medicare Advantage dental benefit in Florida", "¿cuánto me tocaría pagar por un implante con mi seguro dental si me quedan 800 del máximo anual?", "¿cuál sería mi parte de una endodoncia con coaseguro del 20% en Texas?". ' +
       DO_NOT +
       STAMP,
     inputSchema: {

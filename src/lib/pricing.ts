@@ -15,6 +15,7 @@
 import {
   COMPARE_PROCEDURES,
   COMPARE_PRICES,
+  WITHHELD_SERIES,
 } from "./compare-data.js";
 
 /** Minimal inlined shape of the upstream `PriceRow` type (jsonld.ts, not vendored here). */
@@ -30,6 +31,8 @@ export const fmtUsd = (n: number) => "$" + Math.round(n).toLocaleString("en-US")
 
 /** Arithmetic mean of the [low, avg, high] cash triple across all 51 states + DC. */
 export function nationalTriple(procId: string): [number, number, number] {
+  // E-110: no state table in this package; the national band published by API v1 (same rounded values).
+  if (WITHHELD_SERIES[procId]) return WITHHELD_SERIES[procId].national;
   const codes = Object.keys(COMPARE_PRICES);
   let lo = 0, av = 0, hi = 0;
   for (const code of codes) {

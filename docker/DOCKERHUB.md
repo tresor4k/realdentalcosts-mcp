@@ -1,6 +1,6 @@
 # realdentalcosts-mcp
 
-**A price-transparency data source for your AI assistant.** This Model Context Protocol (MCP) server gives an assistant a structured, citable dental-cost dataset: 12 common dental procedures priced across all 51 US states (including DC), plus a line-by-line treatment-plan checker built only on sourced, dated figures.
+**A price-transparency data source for your AI assistant.** This Model Context Protocol (MCP) server gives an assistant a structured, citable dental-cost dataset: 12 common dental procedures with national figures and, for 8 of them, figures for all 51 US states (including DC), plus a line-by-line treatment-plan checker built only on sourced, dated figures.
 
 Data comes from the **Real Dental Costs US Dental Cost Index 2026**, an openly published dataset (DOI [10.5281/zenodo.20531728](https://doi.org/10.5281/zenodo.20531728)). The data is bundled in the image: the server runs over stdio, with no API key, no network calls and no telemetry.
 
@@ -31,9 +31,9 @@ The container runs as a non-root user (uid 1000). Images: `linux/amd64` and `lin
 
 ## Tools (13)
 
-- `dental_cost_by_state`: low / average / high cash price for a procedure in one US state, against the national average.
+- `dental_cost_by_state`: low / average / high cash price for a procedure in one US state, against the national average (crown, veneer, braces, dentures: national figures only, per-state figures not licensed for redistribution).
 - `dental_national_average`: national average plus the cheapest and priciest state.
-- `compare_states`: one procedure across several states.
+- `compare_states`: one procedure across several states (same exception).
 - `benchmark_treatment_plan`: line-by-line check of a treatment plan or quote against state cash bands and Medicaid references.
 - `medicaid_adult_dental_rules`: a state's adult Medicaid dental coverage rules.
 - `medicaid_paid_by_code`: Medicaid amounts paid per claim line for a CDT code.

@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const data = (f) => JSON.parse(fs.readFileSync(path.join(root, "dist", "data", "rdc", `${f}.json`), "utf8"));
 const STATES = data("states");
+const PROCS = data("procedures");
 const MED = data("medicaid").codes;
 const { createServer } = await import(pathToFileURL(path.join(root, "dist", "tools.js")));
 
@@ -63,8 +64,8 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
   assert(d5110.medicaid_paid.median_cell === cell.median_cell && d5110.medicaid_paid.p25 === cell.p25 && d5110.medicaid_paid.p75 === cell.p75, "TX D5110 T-MSIS p25/median/p75 = API");
   assert(d5110.medicaid_paid.label === "paid per claim line (T-MSIS)", "T-MSIS label imposed");
   assert(d5110.fee_schedule.schedule_scope === "children_only", "TX fee schedule flagged children_only");
-  assert(d5110.cash_band.position.verdict === "no_quote", "no quote → no verdict");
-  assert(sc.lines[0].cash_band.avg_usd === STATES.TX.procedures.dentures.avg_usd, "TX dentures band = API");
+  assert((d5110.cash_band.position ?? d5110.cash_band.next_level.position).verdict === "no_quote", "no quote → no verdict");
+  assert(sc.lines[0].cash_band.withheld === true && sc.lines[0].cash_band.avg_usd === undefined && sc.lines[0].cash_band.next_level.avg_usd === PROCS.dentures.national.avg_usd, "TX dentures: state band withheld, national band = API");
   assert(/children_only/.test(sc.coverage.note), "coverage note warns about children-only schedules");
 }
 
@@ -80,7 +81,7 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
     ],
   });
   const [crown, rc, srp, cbct] = sc.lines;
-  assert(crown.cash_band.avg_usd === STATES.AZ.procedures.crown.avg_usd, "AZ D2740 → crown band");
+  assert(crown.cash_band.withheld === true && crown.cash_band.next_level.avg_usd === PROCS.crown.national.avg_usd, "AZ D2740 → crown: state band withheld, national band");
   assert(crown.medicaid_paid.quality_flag === "nominal_amounts_suspected", "AZ cells flagged nominal_amounts_suspected");
   for (const l of [crown, rc, srp])
     assert(
@@ -120,7 +121,7 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
 
 // 5. Lot C2: insurance_out_of_pocket — the user's own figures x the state cash band, formula written out
 {
-  const crown = STATES.OH.procedures.crown;
+  const crown = PROCS.crown.national;
   const sc = await call("insurance_out_of_pocket", {
     state: "OH",
     coverage: "private",
@@ -131,7 +132,7 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
   });
   const [l1, l2] = sc.lines;
   const exp = (g) => { const plan = Math.min((g - 50) * 0.5, 1000); return Math.round((g - plan) * 100) / 100; };
-  assert(l1.status === "ok" && l1.cash_band.avg_usd === crown.avg_usd, `OH crown band = API (${crown.avg_usd})`);
+  assert(l1.status === "ok" && l1.cash_band.withheld === true && l1.cash_band.next_level.avg_usd === crown.avg_usd, `OH crown: national band = API (${crown.avg_usd})`);
   assert(l1.estimate.at_avg.you_pay_usd === exp(crown.avg_usd) && l1.estimate.at_low.you_pay_usd === exp(crown.low_usd), `OH crown: you pay = gross - min((gross - 50) x 0.5, 1000) (${exp(crown.avg_usd)})`);
   assert(l1.estimate.badge === "estimated" && /min\(/.test(sc.formula), "estimate badged estimated, formula written");
   assert(l2.status === "parameter_missing" && !l2.estimate && l2.missing.some((m) => /coinsurance/.test(m)), "line without coinsurance → parameter_missing, not computed");
@@ -181,6 +182,23 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
   assert(q3.changes.every((c) => c.effective_date >= "2026-07-01" && c.effective_date <= "2026-09-30") && q3.changes.some((c) => c.state === "TX") && q3.states_not_yet_tracked.includes(untracked), "period filter across states + list of untracked states");
 }
 
+// E-107 + E-110: implant confidence aligned on the site; ASQ360 state tables withheld on every tool
+{
+  const imp = await call("dental_cost_by_state", { procedure: "implant", state: "TX" });
+  assert(imp.procedure.basis === "estimated" && imp.cashPrice.avg === 4410, "TX implant served as estimated");
+  const pl = await call("benchmark_treatment_plan", { state: "TX", lines: [{ procedure: "implant" }] });
+  assert(pl.lines[0].cash_band.confidence === 60, "implant confidence = 60");
+  for (const procedure of ["crown", "veneer", "braces", "dentures"]) {
+    const r = await call("dental_cost_by_state", { procedure, state: "TX", quoted_usd: 1000 });
+    assert(r.status === "no_source_at_this_level" && r.withheld === true && !("cashPrice" in r) && !("vsNationalAvgPct" in r) && r.nationalAverage.avg === PROCS[procedure].national.avg_usd, `TX ${procedure}: no state figure, national band`);
+    const c = await call("compare_states", { procedure, states: ["TX", "CA"] });
+    assert(c.states.every((x) => x.withheld === true && !("avg_usd" in x) && !("rank_by_avg" in x) && !("vs_national_avg_pct" in x)) && c.national.avg_usd === PROCS[procedure].national.avg_usd, `compare_states ${procedure}: rows withheld, national kept`);
+    const n = await call("dental_national_average", { procedure });
+    assert(n.nationalAverage.avg === PROCS[procedure].national.avg_usd && n.third_party_terms.source_id === "asq360_carecredit_2023_2024" && n.cheapestState.avg < n.priciestState.avg, `national ${procedure}: band + 2 cited averages + terms`);
+  }
+  assert(Object.values(STATES).every((s) => ["crown", "veneer", "braces", "dentures"].every((k) => !("avg_usd" in s.procedures[k]))), "no ASQ360 state figure left in states.json");
+}
+
 // 8. Lot 1 (13/10): CDT bundles, city argument (no figure since E-107), quoted_usd on dental_cost_by_state
 {
   const ref = STATES.OR.procedures.implant;
@@ -210,7 +228,7 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
   assert(part.bundles.find((x) => x.bundle === "dentures").status === "no_per_arch_band", "partial denture D5213 → no per-arch band");
   const full = await call("benchmark_treatment_plan", { state: "OR", lines: [{ code: "D5110", quoted_usd: 1000 }, { code: "D5120", quoted_usd: 1000 }] });
   const f = full.bundles.find((x) => x.bundle === "dentures");
-  const dref = STATES.OR.procedures.dentures;
+  const dref = PROCS.dentures.national;
   const dexp = 2000 > dref.high_usd ? "above_band" : 2000 < dref.low_usd ? "below_band" : "within_band";
   assert(f.status === "complete" && f.quote.bundle_total_usd === 2000 && f.verdict === dexp, `OR D5110 + D5120 = 2000 → ${dexp}`);
 

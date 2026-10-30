@@ -14,9 +14,9 @@
 <h2>Tools</h2>
 <p>All tools are read-only (<code>readOnlyHint: true</code>, <code>destructiveHint: false</code>, <code>openWorldHint: false</code>) and accept <code>lang</code> <code>en</code> or <code>es</code>.</p>
 <ul>
-<li><code>dental_cost_by_state</code>: the cash band (low, average, high) of one of 12 procedures in a US state (51 incl. DC), the national band, the gap in percent and the state's Restorative Cost Index, with an observed or estimated badge.</li>
+<li><code>dental_cost_by_state</code>: the cash band (low, average, high) of one of 12 procedures in a US state (51 incl. DC), the national band, the gap in percent and the state's Restorative Cost Index, with an observed or estimated badge. For crown, veneer, braces and dentures: no state figure (see Observed or estimated), the national band instead.</li>
 <li><code>dental_national_average</code>: the national cash band of a procedure and the states at both ends of the range of state averages.</li>
-<li><code>benchmark_treatment_plan</code>: a treatment plan checked line by line (CDT codes or procedure names, quantities, quoted amounts): state cash band and where the quoted amount falls in it, what Medicaid paid per claim line, the official fee schedule with its age scope, the state's adult Medicaid rule and numbered sources.</li>
+<li><code>benchmark_treatment_plan</code>: a treatment plan checked line by line (CDT codes or procedure names, quantities, quoted amounts): state cash band (national band for crown, veneer, braces and dentures) and where the quoted amount falls in it, what Medicaid paid per claim line, the official fee schedule with its age scope, the state's adult Medicaid rule and numbered sources.</li>
 <li><code>medicaid_adult_dental_rules</code>: a state's adult Medicaid dental level, annual dollar cap with a verbatim quote, orthodontics and implants policy, share of dentists billing Medicaid and the official fee schedule.</li>
 <li><code>medicaid_paid_by_code</code>: what Medicaid paid per claim line (T-MSIS 2018-2024) for one of 61 CDT codes, nationally or in a state, with the official fee when one is published.</li>
 <li><code>low_cost_dental_options</code>: dental schools, health centers, dental shortage areas (HPSA), Mission of Mercy events and charity programs in a state, with an optional county.</li>
@@ -25,7 +25,7 @@
 
 <h2>Example questions</h2>
 <ul>
-<li>"How much is a dental crown in Ohio without insurance?"</li>
+<li>"How much is a root canal in Ohio without insurance?"</li>
 <li>"My dentist quoted D2740 and four quadrants of D4341 in Arizona. Is each line in the usual range?"</li>
 <li>"Does Medicaid cover dental care for adults in Georgia, and is there a yearly limit?"</li>
 <li>"¿Cuánto paga Medicaid por el código D7140 en Florida?"</li>
@@ -36,6 +36,7 @@
 <ul>
 <li><strong>Source and period.</strong> Every figure carries the URL of its source and its period or effective date.</li>
 <li><strong>Observed or estimated.</strong> Observed figures are measured. Estimated figures are not collected prices: the state implant series is an editorial estimate (edition 2026.1; state ranking validated against ASQ360, levels not verified), and other estimated figures are scaled from a national range by an index built on it. Band edges (low, high) are modelled.</li>
+<li><strong>Figures not published here.</strong> The per-state averages for crown, veneer, braces and dentures come from the <a href="https://www.carecredit.com/dentistry/costs/">ASQ360/CareCredit Average Procedural Cost Study 2023-2024</a>. They are cited with attribution on realdentalcosts.com pages but are not licensed for redistribution: the tools return <code>no_source_at_this_level</code>, the study link and the national band.</li>
 <li><strong>Missing figures.</strong> When no source covers a level, the answer says <code>no_source_at_this_level</code> and gives the next level up. Nothing is invented.</li>
 <li><strong>Medicaid paid per claim line</strong> is what Medicaid paid (T-MSIS), not what a patient is charged.</li>
 <li><strong>Official fee schedules</strong> carry an age scope: <code>children_only</code> when the source says so, <code>not_verified</code> otherwise. They are context only and never the reference for where a quoted amount falls.</li>

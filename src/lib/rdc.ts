@@ -13,7 +13,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { COMPARE_PRICES } from "./compare-data.js";
+import { COMPARE_PRICES, WITHHELD_SERIES, WITHHELD_NOTE, THIRD_PARTY_TERMS, NATIONAL_SOURCE } from "./compare-data.js";
 import { nationalTriple, PROC_LABELS_ES } from "./pricing.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -235,12 +235,14 @@ function position(perUnit: number | null, low: number, high: number, comparable:
 function cashBand(procId: string, st: string, perUnit: number | null, comparable: boolean): Any {
   const p = D().states[st].procedures[procId];
   const nat = D().procedures[procId];
-  if (p.basis === "national") {
+  const withheld = WITHHELD_SERIES[procId] != null;
+  if (p.basis === "national" || withheld) {
     const pos = position(perUnit, nat.national.low_usd, nat.national.high_usd, comparable);
     return {
       status: "no_source_at_this_level",
       geo: "state",
-      reason: "No per-state source exists for this procedure.",
+      ...(withheld ? { procedure_id: procId, basis: p.basis, withheld: true, source_url: THIRD_PARTY_TERMS.source_url } : {}),
+      reason: withheld ? "Per-state figures not licensed for redistribution: see source_url." : "No per-state source exists for this procedure.",
       next_level: {
         status: "ok",
         geo: "national",
@@ -252,8 +254,8 @@ function cashBand(procId: string, st: string, perUnit: number | null, comparable
         high_usd: nat.national.high_usd,
         badges: badges(nat.basis),
         position: pos.verdict === "no_quote" ? pos : { ...pos, verdict: "no_state_source_national_used", vs_national: pos.verdict },
-        source: nat.provenance.source,
-        source_url: nat.provenance.source_url,
+        source: withheld ? NATIONAL_SOURCE : nat.provenance.source,
+        source_url: withheld ? nat.national.source : nat.provenance.source_url,
         period: nat.provenance.period,
       },
     };
@@ -781,9 +783,22 @@ export function compareStates(procId: string, codes: string[], lang: Lang): Any 
   const all = Object.keys(COMPARE_PRICES);
   const noStateVariation = nat.basis === "national";
   const [nLow, nAvg, nHigh] = nationalTriple(procId).map(Math.round);
+  const withheld = WITHHELD_SERIES[procId] != null;
   const states = codes.map((st) => {
-    const [low, avg, high] = COMPARE_PRICES[st][procId];
     const p = d.states[st].procedures[procId].provenance;
+    if (withheld)
+      return {
+        code: st,
+        name: d.states[st].name,
+        status: "no_source_at_this_level",
+        geo: "state",
+        withheld: true,
+        reason: WITHHELD_NOTE[lang],
+        source_url: THIRD_PARTY_TERMS.source_url,
+        period: p.period,
+        link: stateHubUrl(st),
+      };
+    const [low, avg, high] = COMPARE_PRICES[st][procId];
     return {
       code: st,
       name: d.states[st].name,
@@ -819,8 +834,8 @@ export function compareStates(procId: string, codes: string[], lang: Lang): Any 
       currency: "USD",
       method: "Mean of the 51 state figures (incl. DC).",
       badges: { avg_usd: "derived", low_usd: "estimated", high_usd: "estimated" },
-      source: prov.source,
-      source_url: prov.source_url,
+      source: withheld ? NATIONAL_SOURCE : prov.source,
+      source_url: withheld ? nat.national.source : prov.source_url,
       period: prov.period,
     },
     legend: {

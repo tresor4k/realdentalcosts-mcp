@@ -8,6 +8,8 @@ All notable changes to this project are documented here.
 - `dental_cost_by_city` removed (13 tools); city data file and its extraction script deleted. No city implant figure or clinic count is served.
 - `benchmark_treatment_plan`: the `city` argument stays accepted and returns `city_reference.status = no_source_at_this_level`.
 - Implant series moved to `basis: estimated`: editorial estimate, edition 2026.1, not collected prices; state ranking validated against ASQ360, levels not verified. No price value changed.
+- Implant series confidence aligned on API v1: 72 -> 60.
+- ASQ360/CareCredit per-state figures (crown, veneer, braces, dentures) withheld, as in API v1 1.3.0: `no_source_at_this_level`, study link, national band; only the 2 cited state averages stay on `dental_national_average`.
 - Basis notes, Restorative Cost Index note, tool descriptions, server instructions and public pages reworded accordingly.
 
 ## [0.3.1] - 2026-10-13

@@ -7,8 +7,8 @@
 **A price-transparency data source for your AI assistant.** Most dental-cost
 numbers floating around the web are guesses, ad copy, or averages nobody can
 trace back to a source. This server hands your assistant a structured,
-citable dataset instead: 12 common dental procedures, priced across all 51
-US states (including DC), plus a line-by-line treatment-plan
+citable dataset instead: 12 common dental procedures with national figures and,
+for 8 of them, figures for all 51 US states (including DC), plus a line-by-line treatment-plan
 checker built only on sourced, dated figures.
 
 Data comes from the **Real Dental Costs US Dental Cost Index 2026**: every
@@ -85,7 +85,9 @@ the data bundled:
 ### `dental_cost_by_state`
 
 Low/average/high cash price for a procedure in one US state, benchmarked
-against the national average and the state's dental cost index.
+against the national average and the state's dental cost index. For crown,
+veneer, braces and dentures it returns `no_source_at_this_level`, the study link
+and the national band (see Data & methodology).
 
 ```
 procedure: "implant"   state: "CA"
@@ -154,7 +156,8 @@ license stated on each record (for example the implant series, DOI
 [10.5281/zenodo.20531728](https://doi.org/10.5281/zenodo.20531728)); attribution required: link to
 <https://realdentalcosts.com> or cite the DOI. State averages for crown, veneer, braces and dentures
 come from the ASQ360/CareCredit Average Procedural Cost Study 2023-2024: they remain the property of
-their publisher, are not covered by Real Dental Costs' license, and must be cited to that study.
+their publisher, are not covered by Real Dental Costs' license, and must be cited to that study. They are cited on realdentalcosts.com pages but not
+licensed for redistribution, so this server does not publish them, as in the site's API v1.
 
 ## Data & methodology
 
@@ -168,7 +171,7 @@ published by [Real Dental Costs](https://realdentalcosts.com):
 
 Every procedure carries a `basis` field. `observed` state averages are
 measured prices (crown/veneer/braces/dentures = ASQ360/CareCredit Average
-Procedural Cost Study 2023-2024), with the low/high band around them modelled
+Procedural Cost Study 2023-2024, per-state figures not published here), with the low/high band around them modelled
 from national ratios. The implant series is `estimated`: an editorial estimate,
 edition 2026.1, not collected prices (state ranking validated against ASQ360,
 levels not verified). Other `estimated` procedures have no collected per-state

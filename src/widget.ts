@@ -291,13 +291,16 @@ ${BRIDGE}
   function compare(d, root) {
     var rows = (d.states || []).map(function (s) {
       var name = el("td", null, s.name);
+      if (s.withheld) return [name, el("td", "warn", "state figure withheld"), "—", "—", "—", "—"];
       if (s.badges && s.badges.avg_usd) name.appendChild(badge(s.badges.avg_usd + " avg"));
       return [name, usd(s.low_usd), usd(s.avg_usd), usd(s.high_usd), s.rank_by_avg != null ? s.rank_by_avg + "/" + s.of_states : "—", pct(s.vs_national_avg_pct)];
     });
     var n = d.national;
     if (n) rows.push([el("td", "note", "US mean of 51"), usd(n.low_usd), usd(n.avg_usd), usd(n.high_usd), "—", "—"]);
     table(["State", "Low", "Average", "High", "Rank (1 = lowest avg)", "vs US avg"], rows, root);
-    if (d.procedure && d.procedure.basis_note) root.appendChild(el("p", "note", d.procedure.basis_note));
+    var wh = (d.states || []).filter(function (s) { return s.withheld; })[0];
+    if (wh) root.appendChild(el("p", "note", wh.reason));
+    else if (d.procedure && d.procedure.basis_note) root.appendChild(el("p", "note", d.procedure.basis_note));
   }
   function quote(q, root) {
     if (!q || !q.quote) return;
