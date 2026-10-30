@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "{{SITE_SLUG}}",
   "version": "1.0.0",
-  "description": "Sourced, dated dental cost research for the United States and Canada: cash price bands by state and city, line-by-line checks of a dentist's quote, Medicaid and Medicare dental rules, and low-cost care options.",
+  "description": "Sourced, dated dental cost research for the United States and Canada: cash price bands by state, line-by-line checks of a dentist's quote, Medicaid and Medicare dental rules, and low-cost care options.",
   "author": {
     "name": "{{DEVELOPER_NAME}}",
     "email": "{{CONTACT_EMAIL}}",
@@ -15,12 +15,12 @@
       "interface": {
         "displayName": "{{SITE_NAME}}",
         "shortDescription": "Sourced US dental cost data",
-        "longDescription": "Real Dental Costs answers dental price and coverage questions with published research, each figure returned with its source, its period and a link to the matching page of realdentalcosts.com.\n\nWhat you can do:\n- Check a dentist's quote or treatment plan line by line (CDT codes such as D2740, or procedure names, with quantities and quoted amounts). Codes that make up one treatment, such as an implant, its abutment and its crown, are read together and compared with the state cash band and, when published, the city reference.\n- Look up what a common procedure costs in a US state, in a US city (dental implants), nationally, or in two to five states side by side.\n- Ask whether adult Medicaid covers dental care in a state, whether it has a yearly dollar limit, and what Medicaid paid per claim line for a CDT code.\n- Ask whether Medicare covers dental work, with the statute and medicare.gov quoted, and what to check in a Medicare Advantage plan.\n- Estimate your out-of-pocket share from the figures of your own dental plan (deductible left, annual maximum left, coinsurance).\n- Find low-cost care in a state: dental school clinics, community health centers and dental shortage areas.\n- See dated changes to public dental programs, and Canadian figures: cost by province and a Canadian Dental Care Plan co-pay check.\n- Ask in English or Spanish.\n\nWho it is for: patients and families comparing a quote, checking coverage before treatment, or looking for affordable care; the people who help them.\n\nSources: Real Dental Costs observed price series and open datasets, HHS/CMS Medicaid provider spending (T-MSIS), official Medicaid fee schedules, state Medicaid agency documents, a published procedural cost study, HRSA shortage-area data, the Social Security Act and medicare.gov, and the Government of Canada.\n\nLimits:\n- Price bands are market research, not a quote from any dentist and not what an insurer or Medicaid will pay for a given person. A figure that is not published at a given level is reported as missing, never estimated.\n- Pricing and coverage research only, not medical, dental, insurance or financial advice. Real Dental Costs does not recommend dentists, clinics or insurers.\n- Read-only: no account, no login. The plugin books, buys, sends and contacts nothing, and never asks for a name, contact details, insurer or member ID.",
+        "longDescription": "Real Dental Costs answers dental price and coverage questions with published research, each figure returned with its source, its period and a link to the matching page of realdentalcosts.com.\n\nWhat you can do:\n- Check a dentist's quote or treatment plan line by line (CDT codes such as D2740, or procedure names, with quantities and quoted amounts). Codes that make up one treatment, such as an implant, its abutment and its crown, are read together and compared with the state cash band.\n- Look up what a common procedure costs in a US state, nationally, or in two to five states side by side.\n- Ask whether adult Medicaid covers dental care in a state, whether it has a yearly dollar limit, and what Medicaid paid per claim line for a CDT code.\n- Ask whether Medicare covers dental work, with the statute and medicare.gov quoted, and what to check in a Medicare Advantage plan.\n- Estimate your out-of-pocket share from the figures of your own dental plan (deductible left, annual maximum left, coinsurance).\n- Find low-cost care in a state: dental school clinics, community health centers and dental shortage areas.\n- See dated changes to public dental programs, and Canadian figures: cost by province and a Canadian Dental Care Plan co-pay check.\n- Ask in English or Spanish.\n\nWho it is for: patients and families comparing a quote, checking coverage before treatment, or looking for affordable care; the people who help them.\n\nSources: Real Dental Costs price research and open datasets, HHS/CMS Medicaid provider spending (T-MSIS), official Medicaid fee schedules, state Medicaid agency documents, a published procedural cost study, HRSA shortage-area data, the Social Security Act and medicare.gov, and the Government of Canada.\n\nLimits:\n- Price bands are market research, not a quote from any dentist and not what an insurer or Medicaid will pay for a given person. A figure that is not published at a given level is reported as missing, never estimated.\n- Pricing and coverage research only, not medical, dental, insurance or financial advice. Real Dental Costs does not recommend dentists, clinics or insurers.\n- Read-only: no account, no login. The plugin books, buys, sends and contacts nothing, and never asks for a name, contact details, insurer or member ID.",
         "developerName": "{{DEVELOPER_NAME}}",
         "category": "Healthcare",
         "capabilities": [
           "Check a dental quote or treatment plan line by line",
-          "Dental cost by US state, city or nationally",
+          "Dental cost by US state or nationally",
           "Compare dental costs across US states",
           "Adult Medicaid dental rules and yearly limits by state",
           "What Medicaid paid per CDT code",
@@ -46,10 +46,10 @@
         "test_cases": {
           "positive": [
             {
-              "description": "A dentist's implant quote with CDT codes and amounts is checked line by line against the state cash band and the city reference.",
+              "description": "A dentist's implant quote with CDT codes and amounts is checked line by line against the state cash band.",
               "prompt": "My dentist in Portland, Oregon quoted me $6,400 for one implant: D6010 $2,900, D6057 $1,300, D6058 $2,200. Is that a fair price?",
               "tools_triggered": "benchmark_treatment_plan",
-              "expected_behavior": "Reads the three codes as one complete implant totalling $6,400, says it is above the Oregon single-implant band of $3,940 to $6,010 (observed average $4,725), gives the Portland average of $4,400, cites the sources, and shows the plan card. It does not present the band as a quote."
+              "expected_behavior": "Reads the three codes as one complete implant totalling $6,400, says it is above the Oregon single-implant band of $3,940 to $6,010 (average $4,725, an editorial estimate), says no city-level figure is published, cites the sources, and shows the plan card. It does not present the band as a quote."
             },
             {
               "description": "Adult Medicaid dental rule for one state, including its yearly dollar limit.",
@@ -86,7 +86,7 @@
               "prompt": "Which electric toothbrush should I buy?"
             },
             {
-              "description": "A general question unrelated to dental care, even though it names a city the plugin covers; no tool should run.",
+              "description": "A general question unrelated to dental care, even though it names a US city; no tool should run.",
               "prompt": "What's the weather like in Portland today?"
             }
           ]
@@ -96,7 +96,7 @@
       },
       "publication": {
         "countries": ["US", "CA"],
-        "release_notes": "First submission. 14 read-only tools for dental cost and coverage research in the United States and Canada, with cards. No account, no authentication."
+        "release_notes": "First submission. 13 read-only tools for dental cost and coverage research in the United States and Canada, with cards. No account, no authentication."
       }
     }
   }

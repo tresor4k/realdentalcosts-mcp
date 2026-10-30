@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+- Correction of October 25, 2026 (<https://realdentalcosts.com/en/data-corrections/>) applied to the server.
+- `dental_cost_by_city` removed (13 tools); city data file and its extraction script deleted. No city implant figure or clinic count is served.
+- `benchmark_treatment_plan`: the `city` argument stays accepted and returns `city_reference.status = no_source_at_this_level`.
+- Implant series moved to `basis: estimated`: editorial estimate, edition 2026.1, not collected prices; state ranking validated against ASQ360, levels not verified. No price value changed.
+- Basis notes, Restorative Cost Index note, tool descriptions, server instructions and public pages reworded accordingly.
+
 ## [0.3.1] - 2026-10-13
 
 - Remote server at `https://mcp.realdentalcosts.com/mcp` (and `/claude`), listed in the official MCP Registry as 0.3.1.

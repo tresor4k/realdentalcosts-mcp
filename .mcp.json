@@ -3,7 +3,7 @@
     "realdentalcosts": {
       "command": "npx",
       "args": ["-y", "realdentalcosts-mcp"],
-      "description": "Real Dental Costs open data: U.S. dental cash prices by state and city, insurance out-of-pocket math, Medicaid paid per CDT code (realdentalcosts.com/en/api/)"
+      "description": "Real Dental Costs open data: U.S. dental cash prices by state, insurance out-of-pocket math, Medicaid paid per CDT code (realdentalcosts.com/en/api/)"
     }
   }
 }

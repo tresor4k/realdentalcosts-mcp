@@ -1,6 +1,6 @@
 # realdentalcosts-mcp
 
-**A price-transparency data source for your AI assistant.** This Model Context Protocol (MCP) server gives an assistant a structured, citable dental-cost dataset: 12 common dental procedures priced across all 51 US states (including DC) and 200+ cities, plus a line-by-line treatment-plan checker built only on sourced, dated figures.
+**A price-transparency data source for your AI assistant.** This Model Context Protocol (MCP) server gives an assistant a structured, citable dental-cost dataset: 12 common dental procedures priced across all 51 US states (including DC), plus a line-by-line treatment-plan checker built only on sourced, dated figures.
 
 Data comes from the **Real Dental Costs US Dental Cost Index 2026**, an openly published dataset (DOI [10.5281/zenodo.20531728](https://doi.org/10.5281/zenodo.20531728)). The data is bundled in the image: the server runs over stdio, with no API key, no network calls and no telemetry.
 
@@ -29,10 +29,9 @@ MCP client configuration (Claude Desktop, Claude Code, Cursor):
 
 The container runs as a non-root user (uid 1000). Images: `linux/amd64` and `linux/arm64`.
 
-## Tools (14)
+## Tools (13)
 
 - `dental_cost_by_state`: low / average / high cash price for a procedure in one US state, against the national average.
-- `dental_cost_by_city`: observed average single-implant cost and clinic count for a city.
 - `dental_national_average`: national average plus the cheapest and priciest state.
 - `compare_states`: one procedure across several states.
 - `benchmark_treatment_plan`: line-by-line check of a treatment plan or quote against state cash bands and Medicaid references.

@@ -8,7 +8,7 @@
 numbers floating around the web are guesses, ad copy, or averages nobody can
 trace back to a source. This server hands your assistant a structured,
 citable dataset instead: 12 common dental procedures, priced across all 51
-US states (including DC) and 200+ cities, plus a line-by-line treatment-plan
+US states (including DC), plus a line-by-line treatment-plan
 checker built only on sourced, dated figures.
 
 Data comes from the **Real Dental Costs US Dental Cost Index 2026**: every
@@ -20,17 +20,15 @@ estimated (details and licensing below).
 > not collected prices; state ranking validated against ASQ360, Spearman 0.945,
 > levels not verified), and the city implant prices and clinic counts were
 > withdrawn: they were written in an AI-assisted session and never collected.
-> Record: <https://realdentalcosts.com/en/data-corrections/>. This server is
-> frozen while a directory review is in progress, so it still returns those
-> figures and still labels the implant series `observed`: treat the implant
-> state band as an editorial estimate and the city figures as unsourced until
-> the next release.
+> Record: <https://realdentalcosts.com/en/data-corrections/>. This server
+> applies the correction: the implant series is labelled `estimated`, the city
+> tool is removed and no city figure or clinic count is served.
 
 ## Quick Start
 
 No installation needed — run directly with `npx`.
 
-> The npm package is still version 0.2.0 (4 tools). The remote server (`https://mcp.realdentalcosts.com/mcp`) and the Docker image below carry all 14 tools.
+> The npm package is still version 0.2.0 (4 tools). The remote server (`https://mcp.realdentalcosts.com/mcp`) and the Docker image below carry all 13 tools.
 
 ### Claude Desktop / Claude Code
 
@@ -91,25 +89,9 @@ against the national average and the state's dental cost index.
 
 ```
 procedure: "implant"   state: "CA"
-→ California: $4,780 – $5,733 – $7,290 (observed state average, modelled band)
+→ California: $4,780 – $5,733 – $7,290 (editorial estimate, edition 2026.1, not collected prices; modelled band)
   National average: $3,760 – $4,507 – $5,733
   +27.2% vs. national average · Restorative Cost Index 127
-```
-
-### `dental_cost_by_city`
-
-Single-implant figure and clinic count for a specific city (206 cities, open
-dataset DOI 10.5281/zenodo.20819438). **Withdrawn on October 25, 2026** (see
-the correction notice above): the figures were never collected, and the
-server still returns them only because it is frozen during a review. The
-response also gives the parent state's implant band for context. Only the
-implant series was published at city level — per-city veneer/braces figures were retired in the source
-site's July 2026 data-integrity work.
-
-```
-city: "Los Angeles"   state: "CA"
-→ 567 clinics
-  Implants avg $4,500 (CA implant band $4,780 – $7,290)
 ```
 
 ### Treatment-plan tools
@@ -186,18 +168,16 @@ published by [Real Dental Costs](https://realdentalcosts.com):
 
 Every procedure carries a `basis` field. `observed` state averages are
 measured prices (crown/veneer/braces/dentures = ASQ360/CareCredit Average
-Procedural Cost Study 2023-2024; the implant series still reads `observed` in
-this frozen server but has been an editorial estimate, edition 2026.1, not
-collected prices, since October 25, 2026), with the low/high band around them
-modelled from national
-ratios. `estimated` procedures have no per-state source: the national figure
-is scaled by the state's Restorative Cost Index, which is valid only for
+Procedural Cost Study 2023-2024), with the low/high band around them modelled
+from national ratios. The implant series is `estimated`: an editorial estimate,
+edition 2026.1, not collected prices (state ranking validated against ASQ360,
+levels not verified). Other `estimated` procedures have no collected per-state
+price: the national figure is scaled by the state's Restorative Cost Index,
+which is built on that implant series and is valid only for
 restorative work (implant/crown/denture — it does not predict orthodontic or
 cosmetic prices). `national` (cosmetic) procedures carry no invented state
 variation. National averages are the arithmetic mean of all 51 states
-(incl. DC) — never a separately invented number. No value in this package is
-hand-edited or fabricated; regenerate `src/data/cities.json` at any time with
-`node scripts/extract-cities.mjs <path-to-us-dental-cost-by-city-2026.csv>`.
+(incl. DC) — never a separately invented number.
 
 ## Disclaimer
 

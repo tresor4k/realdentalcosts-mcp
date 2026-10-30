@@ -15,7 +15,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { COMPARE_PRICES } from "./compare-data.js";
 import { nationalTriple, PROC_LABELS_ES } from "./pricing.js";
-import { findCity } from "./cities.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Any = any;
@@ -418,28 +417,12 @@ function bundles(st: string, lines: PlanLine[]): Any[] {
   return out;
 }
 
-function cityReference(st: string, city: string): Any {
-  const f = findCity(city, st);
-  if (!f)
-    return {
-      status: "no_source_at_this_level",
-      geo: "city",
-      city,
-      reason: "This city is not in the published city dataset for this state: the state band applies.",
-    };
+function cityReference(city: string): Any {
   return {
-    status: "ok",
+    status: "no_source_at_this_level",
     geo: "city",
-    city: f.city.name,
-    procedure_id: "implant",
-    label: D().procedures.implant.label,
-    basis: "observed",
-    avg_usd: f.city.costs.Implants.avg,
-    ...(f.city.clinics != null ? { clinics: f.city.clinics } : {}),
-    note: "Only the single-implant average is published per city; every other line uses the state band.",
-    source: "Real Dental Costs, US Dental Cost by City open dataset",
-    source_url: "https://doi.org/10.5281/zenodo.20819438",
-    period: "2026 dataset edition",
+    city,
+    reason: "Real Dental Costs publishes no city-level figure: city implant prices and clinic counts were withdrawn on October 25, 2026 (https://realdentalcosts.com/en/data-corrections/). The state band applies.",
   };
 }
 
@@ -731,7 +714,7 @@ export function benchmarkTreatmentPlan(st: string, lines: PlanLine[], coverage: 
       medicaid_paid: `${T.tmsis[lang]}: ${D().medicaid.meta.measure}. Source: ${D().medicaid.meta.source}.`,
       fee_schedule: T.fee[lang],
       position: "Derived: quoted_usd / qty compared with the band's low_usd and high_usd; the band edges are modelled (estimated).",
-      badges: "observed = measured average; estimated = modelled figure; undated_schedule = fee schedule without an effective date in the source.",
+      badges: "observed = measured average; estimated = editorial estimate or modelled figure, not collected; undated_schedule = fee schedule without an effective date in the source.",
       api: { state: apiState(st), medicaid: `${SITE}/api/v1/medicaid/{code}.json` },
       quality_evidence: Object.fromEntries(
         outLines
@@ -741,7 +724,7 @@ export function benchmarkTreatmentPlan(st: string, lines: PlanLine[], coverage: 
     },
     lines: outLines,
     ...(bundleOut.length ? { bundles: bundleOut } : {}),
-    ...(city ? { city_reference: cityReference(st, city) } : {}),
+    ...(city ? { city_reference: cityReference(city) } : {}),
     totals: {
       basis: "user_input",
       quoted_total_usd: round2(quoted.reduce((n, l) => n + (l.quoted_usd as number), 0)),
@@ -842,7 +825,7 @@ export function compareStates(procId: string, codes: string[], lang: Lang): Any 
     },
     legend: {
       rank_by_avg: "1 = the state with the smallest average among the 51 (ties share a rank).",
-      badges: "observed = measured average; estimated = modelled figure; derived = computed here from the figures shown.",
+      badges: "observed = measured average; estimated = editorial estimate or modelled figure, not collected; derived = computed here from the figures shown.",
     },
     links: { compare: `${SITE}/en/compare/?${UTM}`, methodology: `${SITE}/en/methodology/?${UTM}` },
     disclaimer: T.disclaimer[lang],

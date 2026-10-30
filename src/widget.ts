@@ -223,12 +223,11 @@ ${BRIDGE}
     var cr = d.city_reference;
     if (cr) {
       var rc = el("tr");
-      rc.appendChild(el("td", null, "City reference — " + cr.city + (cr.label ? " — " + cr.label : "")));
+      rc.appendChild(el("td", null, "City reference — " + cr.city));
       rc.appendChild(el("td", null, "—"));
-      var tc = el("td", cr.status === "ok" ? null : "warn", cr.status === "ok" ? "avg " + usd(cr.avg_usd) + (cr.clinics != null ? " · " + cr.clinics + " clinics" : "") : cr.reason);
-      if (cr.status === "ok") tc.appendChild(badge("observed avg"));
+      var tc = el("td", "warn", cr.reason);
       tc.colSpan = 3; rc.appendChild(tc);
-      rc.appendChild(el("td", "note", cr.status === "ok" ? cr.note : "state band applies"));
+      rc.appendChild(el("td", "note", "state band applies"));
       tbl.appendChild(rc);
     }
     root.appendChild(tbl);

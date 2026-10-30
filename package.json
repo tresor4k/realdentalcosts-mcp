@@ -1,7 +1,7 @@
 {
   "name": "realdentalcosts-mcp",
   "version": "0.3.1",
-  "description": "Look up real US dental prices from your AI assistant: 12 procedures across all 51 states, 200+ cities, line-by-line treatment-plan checks against sourced Medicaid and cash references — data from the Real Dental Costs research index (EN/ES).",
+  "description": "Look up real US dental prices from your AI assistant: 12 procedures across all 51 states, line-by-line treatment-plan checks against sourced Medicaid and cash references — data from the Real Dental Costs research index (EN/ES).",
   "type": "module",
   "license": "MIT",
   "author": "tresor4k",

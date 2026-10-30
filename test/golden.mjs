@@ -45,7 +45,7 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
   assert(band.low_usd === ref.low_usd && band.avg_usd === ref.avg_usd && band.high_usd === ref.high_usd, `OH implant band = ${ref.low_usd}/${ref.avg_usd}/${ref.high_usd}`);
   const exp = 4800 > ref.high_usd ? "above_high_by_pct" : 4800 < ref.low_usd ? "below_low_by_pct" : "within_band";
   assert(band.position.verdict === exp, `OH implant $4,800 verdict = ${exp}`);
-  assert(band.badges.avg_usd === "observed" && band.badges.low_usd === "estimated", "observed average, estimated band badges");
+  assert(band.basis === "estimated" && band.badges.avg_usd === "estimated" && band.badges.low_usd === "estimated", "implant = editorial estimate: estimated average and band badges (E-107)");
   assert(sc.lines[0].medicaid_paid.status === "code_required", "procedure line asks for a code before T-MSIS figures");
   assert(sc.source_notes.length > 0 && sc.source_notes.every((n) => n.url && n.date), "source notes carry URL + date");
 }
@@ -181,7 +181,7 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
   assert(q3.changes.every((c) => c.effective_date >= "2026-07-01" && c.effective_date <= "2026-09-30") && q3.changes.some((c) => c.state === "TX") && q3.states_not_yet_tracked.includes(untracked), "period filter across states + list of untracked states");
 }
 
-// 8. Lot 1 (13/10): CDT bundles, city average, quoted_usd on dental_cost_by_state
+// 8. Lot 1 (13/10): CDT bundles, city argument (no figure since E-107), quoted_usd on dental_cost_by_state
 {
   const ref = STATES.OR.procedures.implant;
   const sc = await call("benchmark_treatment_plan", {
@@ -196,10 +196,7 @@ const numbersIn = (o) => JSON.stringify(o).match(/:-?\d/g)?.length ?? 0;
   assert(b.verdict === exp && exp === "above_band", `OR implant bundle 6488 → ${exp}`);
   assert(sc.totals.above_band.includes("bundle:implant") && sc.totals.not_covered.length === 0, "bundle verdict in totals, bundle lines not reported as not_covered");
   assert(sc.lines.every((l) => l.status === "bundle_line") && !/":-?\d/.test(JSON.stringify(sc.lines.map(({ input, ...r }) => r))), "bundle lines carry no per-line figure");
-  const city = JSON.parse(fs.readFileSync(path.join(root, "dist", "data", "cities.json"), "utf8")).states.find((s) => s.code === "OR").cities.find((c) => c.name === "Portland");
-  assert(sc.city_reference.status === "ok" && sc.city_reference.avg_usd === city.costs.Implants.avg && sc.city_reference.source_url, `Portland OR city implant average = ${city.costs.Implants.avg}`);
-  const nocity = await call("benchmark_treatment_plan", { state: "OR", city: "Nowhereville", lines: [{ code: "D6010" }] });
-  assert(nocity.city_reference.status === "no_source_at_this_level" && !("avg_usd" in nocity.city_reference), "unknown city → no figure");
+  assert(sc.city_reference.status === "no_source_at_this_level" && !("avg_usd" in sc.city_reference) && !("clinics" in sc.city_reference), "city reference serves no figure (E-107)");
 
   const solo = await call("benchmark_treatment_plan", { state: "OR", lines: [{ code: "D6010", quoted_usd: 2926 }] });
   const s = solo.bundles.find((x) => x.bundle === "implant");

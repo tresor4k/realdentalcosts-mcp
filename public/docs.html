@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"></head>
 <body style="font-family:system-ui,sans-serif;max-width:46rem;margin:3rem auto;padding:0 1rem;line-height:1.5">
 <h1>Real Dental Costs for AI assistants</h1>
-<p>Real Dental Costs gives an AI assistant sourced US dental cost research: what a procedure costs in cash by state, city and nationally, what Medicaid paid per claim line, what each state's adult Medicaid dental benefit covers, and where low-cost care exists. It is a remote server of the Model Context Protocol (MCP), read-only, with no account and no authentication. Publisher: Real Dental Costs (<a href="https://realdentalcosts.com/">realdentalcosts.com</a>).</p>
+<p>Real Dental Costs gives an AI assistant sourced US dental cost research: what a procedure costs in cash by state and nationally, what Medicaid paid per claim line, what each state's adult Medicaid dental benefit covers, and where low-cost care exists. It is a remote server of the Model Context Protocol (MCP), read-only, with no account and no authentication. Publisher: Real Dental Costs (<a href="https://realdentalcosts.com/">realdentalcosts.com</a>).</p>
 <p><strong>Server URLs</strong> (Streamable HTTP, POST, JSON responses):</p>
 <ul>
 <li><code>https://mcp.realdentalcosts.com/mcp</code> for ChatGPT and other MCP clients;</li>
@@ -15,7 +15,6 @@
 <p>All tools are read-only (<code>readOnlyHint: true</code>, <code>destructiveHint: false</code>, <code>openWorldHint: false</code>) and accept <code>lang</code> <code>en</code> or <code>es</code>.</p>
 <ul>
 <li><code>dental_cost_by_state</code>: the cash band (low, average, high) of one of 12 procedures in a US state (51 incl. DC), the national band, the gap in percent and the state's Restorative Cost Index, with an observed or estimated badge.</li>
-<li><code>dental_cost_by_city</code>: the observed average for a single dental implant in one of 206 US cities, with its clinic count and the state band. Only the implant series is published at city level.</li>
 <li><code>dental_national_average</code>: the national cash band of a procedure and the states at both ends of the range of state averages.</li>
 <li><code>benchmark_treatment_plan</code>: a treatment plan checked line by line (CDT codes or procedure names, quantities, quoted amounts): state cash band and where the quoted amount falls in it, what Medicaid paid per claim line, the official fee schedule with its age scope, the state's adult Medicaid rule and numbered sources.</li>
 <li><code>medicaid_adult_dental_rules</code>: a state's adult Medicaid dental level, annual dollar cap with a verbatim quote, orthodontics and implants policy, share of dentists billing Medicaid and the official fee schedule.</li>
@@ -36,14 +35,14 @@
 <h2>How to read the figures</h2>
 <ul>
 <li><strong>Source and period.</strong> Every figure carries the URL of its source and its period or effective date.</li>
-<li><strong>Observed or estimated.</strong> Observed figures are measured; estimated figures are modelled from a measured series. Band edges (low, high) are modelled.</li>
+<li><strong>Observed or estimated.</strong> Observed figures are measured. Estimated figures are not collected prices: the state implant series is an editorial estimate (edition 2026.1; state ranking validated against ASQ360, levels not verified), and other estimated figures are scaled from a national range by an index built on it. Band edges (low, high) are modelled.</li>
 <li><strong>Missing figures.</strong> When no source covers a level, the answer says <code>no_source_at_this_level</code> and gives the next level up. Nothing is invented.</li>
 <li><strong>Medicaid paid per claim line</strong> is what Medicaid paid (T-MSIS), not what a patient is charged.</li>
 <li><strong>Official fee schedules</strong> carry an age scope: <code>children_only</code> when the source says so, <code>not_verified</code> otherwise. They are context only and never the reference for where a quoted amount falls.</li>
 </ul>
 
 <h2>Limits</h2>
-<p>The tools cover the United States only. They do not diagnose, choose a treatment, give a named insurer's plan terms or recommend a dentist. Observed market research, not quotes, not medical advice. Method: <a href="https://realdentalcosts.com/en/methodology/">realdentalcosts.com/en/methodology</a>.</p>
+<p>The tools cover the United States only. They do not diagnose, choose a treatment, give a named insurer's plan terms or recommend a dentist. Market research, not quotes, not medical advice. Method: <a href="https://realdentalcosts.com/en/methodology/">realdentalcosts.com/en/methodology</a>.</p>
 
 <h2>Privacy and support</h2>
 <p>No personal data is collected: see the <a href="/privacy.html">privacy policy</a>. Questions and corrections: <a href="mailto:research@realdentalcosts.com">research@realdentalcosts.com</a>, <a href="/support.html">support page</a>, <a href="/terms.html">terms of use</a>.</p>

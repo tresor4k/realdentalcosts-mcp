@@ -51,7 +51,7 @@ try {
     clientInfo: { name: "http-smoke", version: "0.0.0" },
   });
   assert(init.result?.serverInfo?.name === "realdentalcosts-mcp", "initialize returns serverInfo");
-  assert(/Observed market research, not quotes, not medical advice/.test(init.result?.instructions ?? ""), "initialize returns the server instructions");
+  assert(/Market research, not quotes, not medical advice/.test(init.result?.instructions ?? ""), "initialize returns the server instructions");
 
   // Scanner compatibility (OpenAI scan: 406 on Accept application/json alone, 400 on a newer protocol header).
   const CLAUDE_URL = URL_.replace(/\/mcp$/, "/claude");
@@ -81,8 +81,9 @@ try {
 
   const tools = await rpc("tools/list", {});
   const names = tools.result?.tools?.map((t) => t.name) ?? [];
-  assert(names.length === 14, `tools/list returns 14 tools (${names.join(", ")})`);
+  assert(names.length === 13, `tools/list returns 13 tools (${names.join(", ")})`);
   assert(!names.includes("out_of_pocket_estimate"), "modelled out-of-pocket tool is removed");
+  assert(!names.includes("dental_cost_by_city"), "city tool is removed (E-107)");
   const WIDGET = /^ui:\/\/realdentalcosts\/(price|plan)-card-v\d+\.html$/;
   assert(
     tools.result.tools.every((t) => WIDGET.test(t._meta?.["openai/outputTemplate"] ?? "") && t._meta?.ui?.resourceUri === t._meta["openai/outputTemplate"]),

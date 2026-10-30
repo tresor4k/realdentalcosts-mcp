@@ -44,7 +44,7 @@ export function nationalTriple(procId: string): [number, number, number] {
 
 /**
  * National low/avg/high per procedure, derived (not invented) as the mean of
- * the 51 state + DC observations. Feeds the Dataset JSON-LD and the static
+ * the 51 state + DC figures. Feeds the Dataset JSON-LD and the static
  * PriceDistributionChart on the procedure-cost-list pillar (upstream site).
  */
 export const NATIONAL_ROWS: PriceRow[] = COMPARE_PROCEDURES.map(p => {

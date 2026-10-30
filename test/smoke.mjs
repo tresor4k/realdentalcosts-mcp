@@ -9,7 +9,6 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import fs from "node:fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
@@ -18,7 +17,6 @@ const root = path.join(__dirname, "..");
 // expected values (no hand-coded numbers).
 const { COMPARE_PRICES } = await import(pathToFileURL(path.join(root, "dist", "lib", "compare-data.js")));
 const { nationalTriple } = await import(pathToFileURL(path.join(root, "dist", "lib", "pricing.js")));
-const citiesData = JSON.parse(fs.readFileSync(path.join(root, "dist", "data", "cities.json"), "utf8"));
 
 let failures = 0;
 function assert(cond, msg) {
@@ -40,7 +38,7 @@ await client.connect(transport);
 
 // --- tools/list ---
 const toolsList = await client.listTools();
-assert(toolsList.tools.length === 14, `tools/list returns 14 tools (got ${toolsList.tools.length})`);
+assert(toolsList.tools.length === 13, `tools/list returns 13 tools (got ${toolsList.tools.length})`);
 const toolNames = toolsList.tools.map((t) => t.name).sort();
 assert(
   JSON.stringify(toolNames) ===
@@ -53,7 +51,6 @@ assert(
       "insurance_out_of_pocket",
       "medicare_dental_check",
       "dental_program_changes",
-      "dental_cost_by_city",
       "dental_cost_by_state",
       "dental_national_average",
       "low_cost_dental_options",
@@ -100,29 +97,6 @@ function textOf(result) {
   );
 }
 
-// --- dental_cost_by_city: first CA city in the dataset ---
-{
-  const caState = citiesData.states.find((s) => s.code === "CA");
-  assert(!!caState && caState.cities.length > 0, "dataset has at least one CA city");
-  const firstCity = caState.cities[0];
-  const res = await client.callTool({
-    name: "dental_cost_by_city",
-    arguments: { city: firstCity.name, state: "CA" },
-  });
-  const data = textOf(res);
-  assert(!res.isError, `dental_cost_by_city(${firstCity.name}, CA) is not an error`);
-  assert(
-    data.city === firstCity.name,
-    `dental_cost_by_city returns city name "${firstCity.name}"`,
-  );
-  if (firstCity.costs.Implants) {
-    assert(
-      data.costs.Implants.cityAvg === firstCity.costs.Implants.avg,
-      `dental_cost_by_city Implants.cityAvg matches source (${firstCity.costs.Implants.avg})`,
-    );
-  }
-}
-
 // --- lang: es ---
 {
   const res = await client.callTool({
@@ -138,15 +112,6 @@ function textOf(result) {
     data.disclaimer.toLowerCase().includes("investigación"),
     "lang=es returns Spanish disclaimer",
   );
-}
-
-// --- unknown city error path ---
-{
-  const res = await client.callTool({
-    name: "dental_cost_by_city",
-    arguments: { city: "Nowheresville12345" },
-  });
-  assert(res.isError === true, "unknown city returns isError=true");
 }
 
 await client.close();

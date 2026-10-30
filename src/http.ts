@@ -14,7 +14,6 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { LATEST_PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS } from "@modelcontextprotocol/sdk/types.js";
 
 import { createServer } from "./tools.js";
-import { loadCitiesData } from "./lib/cities.js";
 
 export type Variant = "default" | "claude";
 
@@ -98,7 +97,6 @@ function serveStatic(urlPath: string, res: http.ServerResponse): boolean {
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {
-  loadCitiesData();
   const port = Number(process.env.PORT ?? 8787);
   http
     .createServer((req, res) => {

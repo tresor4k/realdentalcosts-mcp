@@ -2,7 +2,7 @@
  * Shared tool registration for realdentalcosts-mcp, used by both the stdio
  * binary (src/index.ts) and the Streamable HTTP entry point (src/http.ts).
  *
- * createServer() registers 3 cost tools + 4 treatment-plan tools + 4 lot C1 + 3 lot C2 tools (the modelled
+ * createServer() registers 2 cost tools + 4 treatment-plan tools + 4 lot C1 + 3 lot C2 tools (the modelled
  * out-of-pocket tool was removed). createServer({ appsSdk: true }) additionally
  * returns `structuredContent` and declares the MCP Apps widgets (price card, plan card;
  * versioned URIs in widget.ts, earlier URIs still served through ResourceTemplates).
@@ -16,7 +16,6 @@ import {
   COMPARE_PRICES,
 } from "./lib/compare-data.js";
 import { nationalTriple, PROC_LABELS_ES } from "./lib/pricing.js";
-import { findCity, suggestCities } from "./lib/cities.js";
 import { WIDGET_URI, WIDGET_MIME, WIDGET_HTML, PLAN_WIDGET_URI, PLAN_WIDGET_HTML } from "./widget.js";
 import {
   benchmarkTreatmentPlan,
@@ -58,12 +57,12 @@ const PROC_SLUGS: Record<string, string> = {
 /** Provenance notes per pricing basis (mirrors the upstream compare-data doc). */
 const BASIS_NOTES: Record<string, { en: string; es: string }> = {
   observed: {
-    en: "The state AVERAGE is a measured price (implant = Real Dental Costs' own observed series, DOI 10.5281/zenodo.20531728; crown/veneer/braces/dentures = ASQ360/CareCredit Average Procedural Cost Study 2023-2024). The low/high band around it is modelled from national ratios, not an observed percentile.",
-    es: "El PROMEDIO estatal es un precio medido (implante = serie observada propia de Real Dental Costs, DOI 10.5281/zenodo.20531728; corona/carilla/brackets/dentaduras = estudio ASQ360/CareCredit 2023-2024). La banda low/high alrededor es modelada a partir de ratios nacionales, no un percentil observado.",
+    en: "The state AVERAGE is a measured price (crown/veneer/braces/dentures = ASQ360/CareCredit Average Procedural Cost Study 2023-2024). The low/high band around it is modelled from national ratios, not an observed percentile.",
+    es: "El PROMEDIO estatal es un precio medido (corona/carilla/brackets/dentaduras = estudio ASQ360/CareCredit 2023-2024). La banda low/high alrededor es modelada a partir de ratios nacionales, no un percentil observado.",
   },
   estimated: {
-    en: "No per-state source exists: the national figure is scaled by the state's Restorative Cost Index. Defensible only inside the restorative regime — treat as an estimate.",
-    es: "No existe fuente estatal: la cifra nacional se escala con el Índice de Coste Restaurador del estado. Solo defendible dentro del régimen restaurador — trátese como estimación.",
+    en: "No collected per-state price exists. The national figure is scaled by the state's Restorative Cost Index (for the single implant, the index base itself: implant = Real Dental Costs' editorial estimate, edition 2026.1 (DOI 10.5281/zenodo.20531728): not collected prices; state ranking validated against ASQ360 (Spearman 0.945), price levels not verified (requalified 2026-10-25, see https://realdentalcosts.com/en/data-corrections/)). Defensible only inside the restorative regime. Treat as an estimate.",
+    es: "No existe un precio estatal recopilado. La cifra nacional se escala con el Índice de Coste Restaurador del estado (para el implante unitario, la propia base del índice: implante = estimación editorial de Real Dental Costs, edición 2026.1 (DOI 10.5281/zenodo.20531728): no son precios recopilados; clasificación estatal validada frente a ASQ360 (Spearman 0.945), niveles de precio no verificados (recalificada el 2026-10-25, véase https://realdentalcosts.com/en/data-corrections/)). Solo defendible dentro del régimen restaurador. Trátese como estimación.",
   },
   national: {
     en: "Cosmetic procedure with no per-state source. Cosmetic pricing does not follow restorative geography, so no state variation is invented: every state carries the national range.",
@@ -72,8 +71,8 @@ const BASIS_NOTES: Record<string, { en: string; es: string }> = {
 };
 
 const INDEX_NOTE = {
-  en: "Restorative Cost Index (100 = national observed implant average). Valid ONLY for implant/crown/denture prices — it does not predict orthodontic (braces) or cosmetic (veneer) prices.",
-  es: "Índice de Coste Restaurador (100 = promedio nacional observado de implantes). Válido SOLO para implantes/coronas/dentaduras — no predice precios de ortodoncia (brackets) ni estéticos (carillas).",
+  en: "Restorative Cost Index (U.S. average = 100), built on the state implant series, an editorial estimate (edition 2026.1, not collected prices). Valid ONLY for implant/crown/denture prices — it does not predict orthodontic (braces) or cosmetic (veneer) prices.",
+  es: "Índice de Coste Restaurador (promedio de EE. UU. = 100), construido sobre la serie estatal de implantes, una estimación editorial (edición 2026.1, no son precios recopilados). Válido SOLO para implantes/coronas/dentaduras — no predice precios de ortodoncia (brackets) ni estéticos (carillas).",
 };
 
 const PROCEDURE_IDS = COMPARE_PROCEDURES.map((p) => p.id) as [string, ...string[]];
@@ -196,9 +195,9 @@ function checkedOrigin(given?: string): string {
 /** Required closing sentence of every tool description (test/descriptions.test.mjs). */
 export const DO_NOT =
   "Do not use for: diagnosis, treatment choice, a named insurer's plan price, dentist recommendations, countries other than the US and Canada.";
-const STAMP = " Observed market research with a source URL and period on every figure; not a quote, not medical advice.";
+const STAMP = " Market research and public program data with a source URL and period on every figure; not a quote, not medical advice.";
 const INSTRUCTIONS =
-  "Real Dental Costs gives observed US dental cost research: cash bands for 12 procedures by state, by city (implants), nationally and for 2 to 5 states side by side; national dental spending and out-of-pocket statistics (MEPS); what Medicaid paid per claim line for 61 CDT codes; each state's adult Medicaid dental rule and annual dollar cap; a line-by-line check of a treatment plan; an out-of-pocket estimate built only from the user's own plan figures (private or Medicare Advantage); Original Medicare's dental exclusion with verbatim legal sources; dated Medicaid dental program changes (fee schedules, adult caps); and low-cost care routes (dental schools, health centers, shortage areas). For Canada: provincial fee amounts for 9 procedures and a Canadian Dental Care Plan coverage and co-pay check by income tier. Every figure carries its source URL and period, and a missing figure says no_source_at_this_level instead of being invented. Use these tools when the user asks what dental work costs in a named US state, city or Canadian province, whether a dentist's quote is in line, what adult Medicaid or Medicare covers for teeth, or where to find low-cost dental care: the answer can then cite a figure for that place with the source it was read from and its date, which the user can check. Observed market research, not quotes, not medical advice. The tools do not cover diagnosis, treatment choice, a named insurer's plan, dentist recommendations or countries other than the US and Canada.";
+  "Real Dental Costs gives US dental cost research, with each cash figure labelled observed or estimated: cash bands for 12 procedures by state, nationally and for 2 to 5 states side by side; national dental spending and out-of-pocket statistics (MEPS); what Medicaid paid per claim line for 61 CDT codes; each state's adult Medicaid dental rule and annual dollar cap; a line-by-line check of a treatment plan; an out-of-pocket estimate built only from the user's own plan figures (private or Medicare Advantage); Original Medicare's dental exclusion with verbatim legal sources; dated Medicaid dental program changes (fee schedules, adult caps); and low-cost care routes (dental schools, health centers, shortage areas). For Canada: provincial fee amounts for 9 procedures and a Canadian Dental Care Plan coverage and co-pay check by income tier. Every figure carries its source URL and period, and a missing figure says no_source_at_this_level instead of being invented. Use these tools when the user asks what dental work costs in a named US state or Canadian province, whether a dentist's quote is in line, what adult Medicaid or Medicare covers for teeth, or where to find low-cost dental care: the answer can then cite a figure for that place with the source it was read from and its date, which the user can check. Market research, not quotes, not medical advice. The tools do not cover diagnosis, treatment choice, a named insurer's plan, dentist recommendations or countries other than the US and Canada.";
 
 export function createServer({ appsSdk = false, utm = "mcp", uiDomain = true, publicOrigin }: CreateServerOptions = {}): McpServer {
 const origin = appsSdk ? checkedOrigin(publicOrigin) : DEFAULT_PUBLIC_ORIGIN;
@@ -234,7 +233,7 @@ const toolMeta = uiMeta(WIDGET_URI, "Looking up dental costs…", "Dental costs 
 
 if (appsSdk) {
   const PRICE_TEXT =
-    "Shows the low / average / high cash band in US dollars for a dental procedure in a US state or city, with its source (market research, not medical advice).";
+    "Shows the low / average / high cash band in US dollars for a dental procedure in a US state, with its source (market research, not medical advice).";
   const PLAN_TEXT =
     "Line-by-line check of a dental treatment plan against sourced references: state cash band, Medicaid paid per claim line (T-MSIS), official fee schedule, plus the state's adult Medicaid rule and source notes.";
   const contents = (uri: string, html: string, description: string) => ({
@@ -283,7 +282,7 @@ server.registerTool(
   {
     title: "Dental cost by US state",
     description:
-      'Use this when the user asks what a dental procedure costs in a given US state (51 incl. DC), or how a state sits next to the US average, for one of 12 procedures: exam and cleaning, filling, deep cleaning, extraction, root canal, crown, implant, All-on-4, dentures, braces, veneer, whitening. Returns the state cash band (low / average / high) in US dollars, the national band, the gap in percent and the state\'s Restorative Cost Index. Each figure is labelled observed or estimated, with a note naming the study behind it and its period (state averages for crown, veneer, braces and dentures from the ASQ360/CareCredit Average Procedural Cost Study 2023-2024; implants from Real Dental Costs\' own observed series, DOI 10.5281/zenodo.20531728; other procedures scaled from the national figure and marked estimated), so the answer can say where the state number comes from and how old it is. Phrasings: "how much is a crown in Ohio without insurance", "what do people in Florida pay for a root canal", "¿cuánto cuesta un implante dental en Texas?", "costo de una limpieza dental en California". When the user already has an amount quoted by their dentist and asks whether it is normal, use benchmark_treatment_plan instead: it places the quoted amount against this band line by line. ' +
+      'Use this when the user asks what a dental procedure costs in a given US state (51 incl. DC), or how a state sits next to the US average, for one of 12 procedures: exam and cleaning, filling, deep cleaning, extraction, root canal, crown, implant, All-on-4, dentures, braces, veneer, whitening. Returns the state cash band (low / average / high) in US dollars, the national band, the gap in percent and the state\'s Restorative Cost Index. Each figure is labelled observed or estimated, with a note naming the study behind it and its period (state averages for crown, veneer, braces and dentures from the ASQ360/CareCredit Average Procedural Cost Study 2023-2024; implants from Real Dental Costs\' editorial estimate, edition 2026.1, DOI 10.5281/zenodo.20531728, not collected data, state ranking validated against ASQ360, levels not verified; other procedures scaled from the national figure and marked estimated), so the answer can say where the state number comes from and how old it is. Phrasings: "how much is a crown in Ohio without insurance", "what do people in Florida pay for a root canal", "¿cuánto cuesta un implante dental en Texas?", "costo de una limpieza dental en California". When the user already has an amount quoted by their dentist and asks whether it is normal, use benchmark_treatment_plan instead: it places the quoted amount against this band line by line. ' +
       DO_NOT +
       STAMP,
     inputSchema: {
@@ -350,81 +349,6 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
-// 2. dental_cost_by_city
-// ---------------------------------------------------------------------------
-server.registerTool(
-  "dental_cost_by_city",
-  {
-    title: "Dental implant cost by US city",
-    description:
-      'Use this when the user names a US city (206 covered) and asks what a dental implant costs there, or how many clinics the figure rests on. Returns the observed city average for a single implant, the clinic count and the state implant band for context (open dataset, DOI 10.5281/zenodo.20819438). Only the implant series is published at city level: other procedures go to dental_cost_by_state. Pass state (2-letter code) to tell apart cities with the same name. Phrasings: "implant cost in San Antonio", "what does a single tooth implant run in Denver", "¿cuánto cuesta un implante en Miami?", "costo de un implante dental en Houston". ' +
-      DO_NOT +
-      STAMP,
-    inputSchema: {
-      city: z.string().min(1).describe('City name, e.g. "Austin" or "San Diego".'),
-      state: stateEnum.optional().describe("Optional 2-letter state code to disambiguate."),
-      lang: langSchema,
-    },
-    annotations: ann("Dental implant cost by US city"),
-    ...toolMeta,
-  },
-  async ({ city, state, lang }) => {
-    const found = findCity(city, state);
-    if (!found) {
-      const suggestions = suggestCities(city, state);
-      return errorResult(
-        `No city matching "${city}"${state ? ` in state ${state}` : ""} found in the dataset.` +
-          (suggestions.length
-            ? ` Did you mean: ${suggestions.join(", ")}?`
-            : " Try a different spelling or omit the state filter."),
-      );
-    }
-    const { city: c, state: st } = found;
-    const stateImplant = COMPARE_PRICES[st.code]?.implant;
-    const payload = {
-      source: SOURCE,
-      reference_url: refUrl("/us-dental-cost-index/", lang),
-      api_url: `${API_BASE}/state/${st.code.toLowerCase()}.json`,
-      city: c.name,
-      state: { code: st.code, name: st.name },
-      clinics: c.clinics,
-      currency: "USD",
-      costs: {
-        Implants: {
-          cityAvg: c.costs.Implants.avg,
-          stateRange: stateImplant
-            ? { low: stateImplant[0], avg: stateImplant[1], high: stateImplant[2] }
-            : undefined,
-        },
-      },
-      note:
-        lang === "es"
-          ? "Solo la serie de implantes se publica a nivel de ciudad (dataset abierto, DOI 10.5281/zenodo.20819438). Las cifras de carillas/brackets por ciudad fueron retiradas en el trabajo de integridad de datos de 2026-07."
-          : "Only the implant series is published at city level (open dataset, DOI 10.5281/zenodo.20819438). Per-city veneer/braces figures were retired in the 2026-07 data-integrity work.",
-      disclaimer: disclaimer(lang),
-    };
-    return jsonResult(
-      payload,
-      stateImplant
-        ? {
-            title: procedureLabel("implant", lang),
-            location: `${c.name}, ${st.code}`,
-            low: stateImplant[0],
-            avg: c.costs.Implants.avg,
-            high: stateImplant[2],
-            avgLabel: lang === "es" ? "Promedio de la ciudad" : "City average",
-            rangeNote:
-              lang === "es"
-                ? `Bajo/alto = banda estatal de ${st.name}. ${payload.note}`
-                : `Low/high = ${st.name} state band. ${payload.note}`,
-            url: cardUrl("implant", lang, st.slug),
-          }
-        : undefined,
-    );
-  },
-);
-
-// ---------------------------------------------------------------------------
 // 4. dental_national_average
 // ---------------------------------------------------------------------------
 server.registerTool(
@@ -432,7 +356,7 @@ server.registerTool(
   {
     title: "US national dental cost",
     description:
-      'Use this when the user asks what a dental procedure costs in the United States in general, with no state or city, for one of the 12 procedures. Returns the national cash band (low / average / high, mean of the 51 state figures incl. DC), its basis (observed or estimated) and the states at both ends of the range of state averages; cosmetic procedures carry no state variation. Phrasings: "average cost of dentures in the US", "typical US cost for braces", "¿cuánto cuesta una endodoncia en Estados Unidos?", "costo promedio de carillas en EE. UU.". ' +
+      'Use this when the user asks what a dental procedure costs in the United States in general, with no state named, for one of the 12 procedures. Returns the national cash band (low / average / high, mean of the 51 state figures incl. DC), its basis (observed or estimated) and the states at both ends of the range of state averages; cosmetic procedures carry no state variation. Phrasings: "average cost of dentures in the US", "typical US cost for braces", "¿cuánto cuesta una endodoncia en Estados Unidos?", "costo promedio de carillas en EE. UU.". ' +
       DO_NOT +
       STAMP,
     inputSchema: {
@@ -508,20 +432,20 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
-// 4-7. Treatment-plan checker (observed, sourced amounts only; plan-card widget)
+// 4-7. Treatment-plan checker (sourced amounts only; plan-card widget)
 // ---------------------------------------------------------------------------
 const planMeta = (invoking: string) => uiMeta(PLAN_WIDGET_URI, invoking, "Sourced figures ready");
 const NOTE =
   " Every figure carries its source URL and period; a missing cell returns status no_source_at_this_level with the next level up. Medicaid amounts are what Medicaid paid per claim line (T-MSIS), not what a patient is charged. No personal data (age, ZIP, name, insurer) is requested or stored. " +
   DO_NOT +
-  " Observed market research, not a quote, not medical, coding or insurance advice.";
+  " Market research, not a quote, not medical, coding or insurance advice.";
 
 server.registerTool(
   "benchmark_treatment_plan",
   {
     title: "Check a dental treatment plan line by line",
     description:
-      'Use this when the user has a treatment plan or quote from a US dentist (CDT codes such as D2740, or procedure names, with quantities and quoted amounts) and wants to know where each line sits. For each line, returns the state cash band (observed or estimated badge) and where the quoted amount falls in it, what Medicaid paid per claim line (T-MSIS p25 / median / p75) and the official Medicaid fee schedule with its age scope (children_only or not_verified: context only), plus the state\'s adult Medicaid rule and numbered sources. quoted_usd is the line total as quoted. Codes billed as parts of one job are summed into a bundle and compared with its band only when the bundle is complete: implant (D6010 + D6056 or D6057 + one crown on the implant: D6058-D6067, D6082-D6084, D6086-D6088, D6094 or D6097), full dentures (D5110 + D5120), veneer (D2962), All-on-4 per arch (D6114 or D6115); a partial bundle returns partial_quote with what the band includes, and a single arch or partial denture gets no verdict; a bridge on implants (D6068-D6079, D6098, D6099, D6120-D6123, D6194, D6195) or a temporary implant crown (D6085) returns no_band. Pass city for the published single-implant city average. Phrasings: "my dentist wrote D2740 and D4341 x4 on the plan, is that in line for Arizona", "go through this dental estimate line by line", "¿es razonable este presupuesto dental en Nevada?", "revisa mi plan de tratamiento con códigos CDT".' +
+      'Use this when the user has a treatment plan or quote from a US dentist (CDT codes such as D2740, or procedure names, with quantities and quoted amounts) and wants to know where each line sits. For each line, returns the state cash band (observed or estimated badge) and where the quoted amount falls in it, what Medicaid paid per claim line (T-MSIS p25 / median / p75) and the official Medicaid fee schedule with its age scope (children_only or not_verified: context only), plus the state\'s adult Medicaid rule and numbered sources. quoted_usd is the line total as quoted. Codes billed as parts of one job are summed into a bundle and compared with its band only when the bundle is complete: implant (D6010 + D6056 or D6057 + one crown on the implant: D6058-D6067, D6082-D6084, D6086-D6088, D6094 or D6097), full dentures (D5110 + D5120), veneer (D2962), All-on-4 per arch (D6114 or D6115); a partial bundle returns partial_quote with what the band includes, and a single arch or partial denture gets no verdict; a bridge on implants (D6068-D6079, D6098, D6099, D6120-D6123, D6194, D6195) or a temporary implant crown (D6085) returns no_band. No city-level figure is published: passing city returns no_source_at_this_level and the state band applies. Phrasings: "my dentist wrote D2740 and D4341 x4 on the plan, is that in line for Arizona", "go through this dental estimate line by line", "¿es razonable este presupuesto dental en Nevada?", "revisa mi plan de tratamiento con códigos CDT".' +
       NOTE,
     inputSchema: {
       state: stateEnum,
@@ -546,7 +470,7 @@ server.registerTool(
         .min(1)
         .max(80)
         .optional()
-        .describe('Optional city in the same state, e.g. "Portland": adds the published city average for a single implant when the city is covered.'),
+        .describe('Optional city in the same state, e.g. "Portland". No city-level figure is published: returns status no_source_at_this_level, and the state band applies.'),
       lang: langSchema,
     },
     annotations: ann("Check a dental treatment plan line by line"),
